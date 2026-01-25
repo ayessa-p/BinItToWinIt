@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/admin.css?v=<?php echo time(); ?>">
     <style>
         /* CRITICAL: Admin page isolation - must override everything */
@@ -53,39 +54,39 @@
         <aside class="admin-sidebar">
             <nav class="admin-sidebar-nav">
                 <a href="<?php echo SITE_URL; ?>/admin/index.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">📊</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-gauge"></i></span>
                     <span>Dashboard</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/tokens.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'tokens.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">💰</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-coins"></i></span>
                     <span>Manage Tokens</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/events.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'events.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">📅</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-calendar-days"></i></span>
                     <span>Events</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/projects.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'projects.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">🚀</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-diagram-project"></i></span>
                     <span>Projects</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/news.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'news.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">📰</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-newspaper"></i></span>
                     <span>News</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/users.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'users.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">👥</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-users"></i></span>
                     <span>Users</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/rewards.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'rewards.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">🎁</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-gift"></i></span>
                     <span>Rewards</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/api_keys.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'api_keys.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">🔑</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-key"></i></span>
                     <span>API Keys</span>
                 </a>
                 <a href="<?php echo SITE_URL; ?>/admin/redemptions.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'redemptions.php') ? 'active' : ''; ?>">
-                    <span class="sidebar-icon">✅</span>
+                    <span class="sidebar-icon"><i class="fa-solid fa-circle-check"></i></span>
                     <span>Redemptions</span>
                 </a>
             </nav>

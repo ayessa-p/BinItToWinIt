@@ -56,7 +56,7 @@ include '../includes/admin_header.php';
     <div class="admin-container">
         <div class="admin-page-header">
             <h1 class="admin-page-title">Dashboard</h1>
-            <p class="admin-page-subtitle">Summary of your App</p>
+            <p class="admin-page-subtitle">System overview</p>
             <div class="admin-breadcrumb">
                 <a href="<?php echo SITE_URL; ?>/admin/index.php">Home</a> / Dashboard
             </div>
@@ -65,7 +65,7 @@ include '../includes/admin_header.php';
         <!-- Statistics Grid -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon green">👥</div>
+                <div class="stat-icon green"><i class="fa-solid fa-users"></i></div>
                 <div class="stat-info">
                     <h3><?php echo number_format($stats['total_users']); ?></h3>
                     <p>Total Users</p>
@@ -73,7 +73,7 @@ include '../includes/admin_header.php';
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon blue">💰</div>
+                <div class="stat-icon blue"><i class="fa-solid fa-coins"></i></div>
                 <div class="stat-info">
                     <h3><?php echo number_format($stats['total_tokens_distributed']); ?></h3>
                     <p>Tokens Distributed</p>
@@ -81,7 +81,7 @@ include '../includes/admin_header.php';
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon orange">♻️</div>
+                <div class="stat-icon orange"><i class="fa-solid fa-recycle"></i></div>
                 <div class="stat-info">
                     <h3><?php echo number_format($stats['total_recycling']); ?></h3>
                     <p>Recycling Activities</p>
@@ -89,7 +89,7 @@ include '../includes/admin_header.php';
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon yellow">🎁</div>
+                <div class="stat-icon yellow"><i class="fa-solid fa-gift"></i></div>
                 <div class="stat-info">
                     <h3><?php echo number_format($stats['total_rewards']); ?></h3>
                     <p>Available Rewards</p>
@@ -102,49 +102,49 @@ include '../includes/admin_header.php';
             <h2 class="admin-section-title">Quick Actions</h2>
             <div class="action-grid">
                 <a href="rewards.php" class="action-card">
-                    <div class="action-icon">🎁</div>
+                    <div class="action-icon"><i class="fa-solid fa-gift"></i></div>
                     <h3>Rewards & Stocks</h3>
                     <p>Edit rewards and update stock quantities</p>
                 </a>
                 
                 <a href="events.php" class="action-card">
-                    <div class="action-icon">📅</div>
+                    <div class="action-icon"><i class="fa-solid fa-calendar-days"></i></div>
                     <h3>Events</h3>
                     <p>Create and manage events</p>
                 </a>
                 
                 <a href="projects.php" class="action-card">
-                    <div class="action-icon">🚀</div>
+                    <div class="action-icon"><i class="fa-solid fa-diagram-project"></i></div>
                     <h3>Projects</h3>
                     <p>Manage organization projects</p>
                 </a>
                 
                 <a href="news.php" class="action-card">
-                    <div class="action-icon">📰</div>
+                    <div class="action-icon"><i class="fa-solid fa-newspaper"></i></div>
                     <h3>News</h3>
                     <p>Create and publish news</p>
                 </a>
                 
                 <a href="users.php" class="action-card">
-                    <div class="action-icon">👥</div>
+                    <div class="action-icon"><i class="fa-solid fa-users"></i></div>
                     <h3>Users</h3>
                     <p>Manage user accounts</p>
                 </a>
                 
                 <a href="tokens.php" class="action-card">
-                    <div class="action-icon">💰</div>
+                    <div class="action-icon"><i class="fa-solid fa-coins"></i></div>
                     <h3>Tokens</h3>
                     <p>Adjust token balances</p>
                 </a>
                 
                 <a href="redemptions.php" class="action-card">
-                    <div class="action-icon">✅</div>
+                    <div class="action-icon"><i class="fa-solid fa-circle-check"></i></div>
                     <h3>Redemptions</h3>
                     <p>Manage reward redemptions</p>
                 </a>
                 
                 <a href="api_keys.php" class="action-card">
-                    <div class="action-icon">🔑</div>
+                    <div class="action-icon"><i class="fa-solid fa-key"></i></div>
                     <h3>API Keys</h3>
                     <p>Manage ESP32 API keys</p>
                 </a>

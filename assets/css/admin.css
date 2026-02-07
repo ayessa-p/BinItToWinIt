@@ -73,7 +73,6 @@ body.admin-page .admin-logo-section {
 body.admin-page .admin-logo-section .logo-img {
     height: 35px !important;
     width: auto !important;
-    filter: brightness(0) invert(1) !important;
 }
 
 body.admin-page .admin-badge {

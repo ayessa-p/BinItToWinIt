@@ -40,7 +40,10 @@
                 <a href="<?php echo SITE_URL; ?>/index.php" class="logo-link">
                     <img src="<?php echo SITE_URL; ?>/mtics2.png" alt="MTICS Logo" class="logo-img">
                 </a>
-                <span class="admin-badge">Admin</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="admin-badge">Admin</span>
+                    <span style="color: #ffffff; font-weight: 600; font-size: 0.9rem;">MTICS</span>
+                </div>
             </div>
             
             <nav class="admin-nav">

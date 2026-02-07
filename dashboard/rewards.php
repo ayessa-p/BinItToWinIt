@@ -150,9 +150,11 @@ include '../includes/header.php';
             </div>
         <?php else: ?>
             <?php foreach ($rewards_by_category as $category => $category_rewards): ?>
-                <h2 style="color: var(--light-blue); margin: 3rem 0 1.5rem; font-size: 1.8rem; border-bottom: 2px solid var(--azure-blue); padding-bottom: 0.5rem;">
-                    <?php echo htmlspecialchars($category); ?>
-                </h2>
+                <div style="background: var(--light-blue-bg); border-radius: var(--radius-lg); padding: 1.5rem; margin: 3rem 0 1.5rem; border-left: 4px solid var(--azure-blue);">
+                    <h2 style="color: var(--medium-blue-text); margin: 0; font-size: 1.8rem;">
+                        <?php echo htmlspecialchars($category); ?>
+                    </h2>
+                </div>
                 
                 <div class="grid grid-3" style="margin-bottom: 3rem;">
                     <?php foreach ($category_rewards as $reward): ?>
@@ -168,12 +170,12 @@ include '../includes/header.php';
                             </div>
                             
                             <div class="card-body" style="flex-grow: 1;">
-                                <p style="color: var(--medium-gray); margin-bottom: 1rem;">
+                                <p style="color: var(--dark-gray); margin-bottom: 1rem;">
                                     <?php echo htmlspecialchars($reward['description']); ?>
                                 </p>
                                 
                                 <?php if ($reward['stock_quantity'] != -1): ?>
-                                    <p style="color: var(--medium-gray); font-size: 0.9rem; margin-bottom: 1rem;">
+                                    <p style="color: var(--medium-blue-text); font-size: 0.9rem; margin-bottom: 1rem;">
                                         <strong>Stock:</strong> <?php echo $reward['stock_quantity']; ?> available
                                     </p>
                                 <?php endif; ?>

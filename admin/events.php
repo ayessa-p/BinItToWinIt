@@ -20,28 +20,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $event_date = $_POST['event_date'] ?? '';
         $location = sanitize_input($_POST['location'] ?? '');
         $is_published = isset($_POST['is_published']) ? 1 : 0;
+
+        // Check if DB has thumbnail/gallery columns
+        $has_thumbnail = false;
+        $has_gallery = false;
+        try {
+            $colStmt = $db->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'events' AND COLUMN_NAME IN ('thumbnail_url','gallery_json')");
+            $colStmt->execute();
+            $cols = $colStmt->fetchAll(PDO::FETCH_COLUMN);
+            $has_thumbnail = in_array('thumbnail_url', $cols);
+            $has_gallery = in_array('gallery_json', $cols);
+        } catch (Exception $e) {
+            // ignore
+        }
+
+        // Handle image uploads
+        $image_url = '';
+        $thumbnail_url = '';
+        $gallery_array = [];
+
+        // If updating, get existing image(s)
+        if ($id > 0) {
+            $stmt = $db->prepare("SELECT image_url" . ($has_thumbnail ? ", thumbnail_url" : "") . ($has_gallery ? ", gallery_json" : "") . " FROM events WHERE id = ?");
+            $stmt->execute([$id]);
+            $existing = $stmt->fetch();
+            if ($existing) {
+                $image_url = $existing['image_url'] ?? '';
+                if ($has_thumbnail) $thumbnail_url = $existing['thumbnail_url'] ?? '';
+                if ($has_gallery && !empty($existing['gallery_json'])) {
+                    $decoded = json_decode($existing['gallery_json'], true);
+                    if (is_array($decoded)) $gallery_array = $decoded;
+                }
+            }
+        }
+
+        // If admin requested deletions (from edit form), remove selected files and entries
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id > 0) {
+            // delete thumbnail
+            if (!empty($_POST['delete_thumbnail']) && !empty($thumbnail_url)) {
+                $file_path = __DIR__ . '/../' . $thumbnail_url;
+                if (file_exists($file_path)) @unlink($file_path);
+                $thumbnail_url = '';
+            }
+
+            // delete selected gallery images
+            if (!empty($_POST['delete_gallery']) && is_array($_POST['delete_gallery']) && count($gallery_array) > 0) {
+                $to_delete = $_POST['delete_gallery'];
+                foreach ($to_delete as $del) {
+                    // remove from filesystem
+                    $file_path = __DIR__ . '/../' . $del;
+                    if (file_exists($file_path)) @unlink($file_path);
+                    // remove from array values
+                    $idx = array_search($del, $gallery_array);
+                    if ($idx !== false) unset($gallery_array[$idx]);
+                }
+                // reindex
+                $gallery_array = array_values($gallery_array);
+            }
+        }
+        $upload_dir = '../uploads/events/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+
+
+
+        // thumbnail upload
+        if ($has_thumbnail && isset($_FILES['thumbnail_image']) && $_FILES['thumbnail_image']['error'] == UPLOAD_ERR_OK) {
+            $file_name = time() . '_thumb_' . basename($_FILES['thumbnail_image']['name']);
+            $target_file = $upload_dir . $file_name;
+            if (move_uploaded_file($_FILES['thumbnail_image']['tmp_name'], $target_file)) {
+                $thumbnail_url = 'uploads/events/' . $file_name;
+            }
+        }
+
+        // gallery uploads (multiple)
+        if ($has_gallery && isset($_FILES['gallery_images'])) {
+            $files = $_FILES['gallery_images'];
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $unique_id = microtime(true) * 10000;
+                    $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+                    $file_name = 'gallery_' . $unique_id . '_' . $i . '.' . $ext;
+                    $target_file = $upload_dir . $file_name;
+                    if (move_uploaded_file($files['tmp_name'][$i], $target_file)) {
+                        $gallery_array[] = 'uploads/events/' . $file_name;
+                    }
+                }
+            }
+        }
         
         if (empty($title) || empty($description) || empty($event_date)) {
             $message = 'Please fill in all required fields.';
             $message_type = 'error';
         } else {
             try {
-                if ($id > 0) {
-                    // Update
-                    $stmt = $db->prepare("
-                        UPDATE events SET title = ?, description = ?, event_date = ?, 
-                        location = ?, is_published = ? WHERE id = ?
-                    ");
-                    $stmt->execute([$title, $description, $event_date, $location, $is_published, $id]);
-                    $message = 'Event updated successfully!';
+                if ($has_thumbnail && $has_gallery) {
+                    $gallery_json = json_encode($gallery_array);
+                    if ($id > 0) {
+                        $stmt = $db->prepare("
+                            UPDATE events SET title = ?, description = ?, event_date = ?, 
+                            location = ?, image_url = ?, thumbnail_url = ?, gallery_json = ?, is_published = ? WHERE id = ?
+                        ");
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $id]);
+                        $message = 'Event updated successfully!';
+                    } else {
+                        $stmt = $db->prepare("
+                            INSERT INTO events (title, description, event_date, location, image_url, thumbnail_url, gallery_json, is_published) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ");
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published]);
+                        $message = 'Event created successfully!';
+                    }
                 } else {
-                    // Create
-                    $stmt = $db->prepare("
-                        INSERT INTO events (title, description, event_date, location, is_published) 
-                        VALUES (?, ?, ?, ?, ?)
-                    ");
-                    $stmt->execute([$title, $description, $event_date, $location, $is_published]);
-                    $message = 'Event created successfully!';
+                    // fallback for older schema
+                    if ($id > 0) {
+                        $stmt = $db->prepare("
+                            UPDATE events SET title = ?, description = ?, event_date = ?, 
+                            location = ?, image_url = ?, is_published = ? WHERE id = ?
+                        ");
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $id]);
+                        $message = 'Event updated successfully!';
+                    } else {
+                        $stmt = $db->prepare("
+                            INSERT INTO events (title, description, event_date, location, image_url, is_published) 
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ");
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published]);
+                        $message = 'Event created successfully!';
+                    }
                 }
                 $message_type = 'success';
             } catch (PDOException $e) {
@@ -77,7 +184,7 @@ if (isset($_GET['edit'])) {
 
 // Get all events
 $stmt = $db->query("SELECT * FROM events ORDER BY event_date DESC");
-$events = $stmt->fetchAll();
+$all_events = $stmt->fetchAll();
 
 include '../includes/admin_header.php';
 ?>
@@ -100,7 +207,7 @@ include '../includes/admin_header.php';
         
         <div class="admin-section">
             <h2 class="admin-section-title"><?php echo $edit_event ? 'Edit Event' : 'Create New Event'; ?></h2>
-            <form method="POST" class="admin-form">
+            <form method="POST" class="admin-form" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                 <?php if ($edit_event): ?>
                     <input type="hidden" name="event_id" value="<?php echo $edit_event['id']; ?>">
@@ -130,6 +237,47 @@ include '../includes/admin_header.php';
                 </div>
                 
                 <div class="admin-form-group">
+                    <label class="admin-form-label">Thumbnail Image</label>
+                    <input type="file" name="thumbnail_image" class="admin-form-input" accept="image/*">
+                    <?php if ($edit_event && !empty($edit_event['thumbnail_url'])): ?>
+                        <div style="margin-top:0.6rem; display:flex; align-items:center; gap:0.6rem;">
+                            <img src="<?php echo SITE_URL . '/' . htmlspecialchars($edit_event['thumbnail_url']); ?>" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">
+                            <label style="font-size:0.9rem; color:var(--medium-gray);">
+                                <input type="checkbox" name="delete_thumbnail" value="1"> Delete thumbnail
+                            </label>
+                        </div>
+                    <?php endif; ?>
+                    <small style="color: var(--medium-gray); display: block; margin-top: 0.5rem;">
+                        Upload a small thumbnail (recommended 4:3)
+                    </small>
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Gallery Images</label>
+                    <input type="file" name="gallery_images[]" class="admin-form-input" accept="image/*" multiple>
+                    <small style="color: var(--medium-gray); display: block; margin-top: 0.5rem;">
+                        Upload multiple images for the gallery (optional) — aspect ratio 4:3 recommended
+                    </small>
+                    <?php if ($edit_event && !empty($edit_event['gallery_json'])): ?>
+                        <?php $existing_gallery = json_decode($edit_event['gallery_json'], true) ?: []; ?>
+                        <?php if (!empty($existing_gallery)): ?>
+                            <div style="margin-top:0.6rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                <?php foreach ($existing_gallery as $gimg): ?>
+                                    <div style="width:90px;">
+                                        <img src="<?php echo SITE_URL . '/' . htmlspecialchars($gimg); ?>" style="width:90px; height:70px; object-fit:cover; border-radius:6px; display:block;">
+                                        <label style="font-size:0.8rem; display:block; margin-top:0.25rem;">
+                                            <input type="checkbox" name="delete_gallery[]" value="<?php echo htmlspecialchars($gimg); ?>"> Remove
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+
+
+                
+                <div class="admin-form-group">
                     <label style="display: flex; align-items: center; gap: 0.5rem;">
                         <input type="checkbox" name="is_published" 
                                <?php echo ($edit_event && $edit_event['is_published']) ? 'checked' : ''; ?>>
@@ -152,6 +300,7 @@ include '../includes/admin_header.php';
                 <table class="admin-table">
                     <thead>
                         <tr>
+                            <th>Image</th>
                             <th>Title</th>
                             <th>Date</th>
                             <th>Location</th>
@@ -160,15 +309,35 @@ include '../includes/admin_header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($events)): ?>
+                        <?php if (empty($all_events)): ?>
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
+                                <td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
                                     No events found. Create your first event above.
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($events as $event): ?>
+                            <?php foreach ($all_events as $event): ?>
                             <tr>
+                                <td>
+                                    <?php
+                                        $thumb = '';
+                                        if (!empty($event['thumbnail_url'])) {
+                                            $thumb = $event['thumbnail_url'];
+                                        } elseif (!empty($event['image_url'])) {
+                                            $thumb = $event['image_url'];
+                                        } elseif (!empty($event['gallery_json'])) {
+                                            $g = json_decode($event['gallery_json'], true);
+                                            if (is_array($g) && count($g) > 0) $thumb = $g[0];
+                                        }
+                                    ?>
+                                    <?php if (!empty($thumb)): ?>
+                                        <img src="<?php echo SITE_URL . '/' . htmlspecialchars($thumb); ?>" 
+                                            alt="<?php echo htmlspecialchars($event['title']); ?>"
+                                            style="width: 48px; height: 36px; object-fit: cover; border-radius: var(--radius-sm);">
+                                    <?php else: ?>
+                                        <span style="color: var(--medium-gray); font-size: 0.9rem;">No image</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($event['title']); ?></td>
                                 <td><?php echo date('M j, Y g:i A', strtotime($event['event_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($event['location'] ?: 'N/A'); ?></td>

@@ -81,16 +81,16 @@ include 'includes/header.php';
                     <div style="margin: 2rem 0;">
                         <h3 style="color: var(--light-blue); margin-bottom: 1rem;">Available Rewards</h3>
                         <div class="grid grid-2">
-                            <div style="padding: 1rem; background: rgba(22, 36, 71, 0.5); border-radius: var(--radius-sm);">
-                                <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Services</h4>
+                            <div style="background: rgba(61, 127, 199, 0.1); padding: 1.5rem; border-radius: var(--radius-md);">
+                                <h4 style="color: var(--gold-yellow); margin-bottom: 0.5rem;">Services</h4>
                                 <ul style="color: var(--medium-gray); list-style: none; padding-left: 0;">
                                     <li>• Printing Credits</li>
                                     <li>• Internet Access</li>
                                     <li>• Lab Access</li>
                                 </ul>
                             </div>
-                            <div style="padding: 1rem; background: rgba(22, 36, 71, 0.5); border-radius: var(--radius-sm);">
-                                <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Merchandise & Electronics</h4>
+                            <div style="background: rgba(61, 127, 199, 0.1); padding: 1.5rem; border-radius: var(--radius-md);">
+                                <h4 style="color: var(--gold-yellow); margin-bottom: 0.5rem;">Merchandise & Electronics</h4>
                                 <ul style="color: var(--medium-gray); list-style: none; padding-left: 0;">
                                     <li>• MTICS Merchandise</li>
                                     <li>• USB Drives</li>

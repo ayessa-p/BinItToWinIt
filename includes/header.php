@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     <header class="main-header">
@@ -15,7 +16,13 @@
             <div class="header-content">
                 <div class="logo-section">
                     <a href="<?php echo SITE_URL; ?>/index.php" class="logo-link">
-                        <img src="<?php echo SITE_URL; ?>/mtics2.png" alt="MTICS Logo" class="logo-img">
+                        <div class="logo-container">
+                            <img src="<?php echo SITE_URL; ?>/mtics2.png" alt="MTICS Logo" class="logo-img">
+                            <div class="logo-text">
+                                <div class="logo-main-text">MTICS</div>
+                                <div class="logo-sub-text">MANILA TECHNICIAN INSTITUTE COMPUTER SOCIETY</div>
+                            </div>
+                        </div>
                     </a>
                 </div>
                 

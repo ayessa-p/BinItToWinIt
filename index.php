@@ -45,9 +45,7 @@ try {
     <div class="container">
         <div class="mission-section">
             <div>
-                <div style="width: 100%; height: 400px; background: var(--light-gray); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--medium-gray);">
-                    <span>Mission Image</span>
-                </div>
+                <img src="bottle.jpg" alt="Mission" style="width: 100%; height: 400px; object-fit: cover; border-radius: var(--radius-md);">
             </div>
             <div class="mission-content">
                 <h2>Our Mission</h2>
@@ -87,17 +85,17 @@ try {
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
                     <div style="text-align: center;">
-                        <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 0.5rem;">♻️</div>
+                        <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 0.5rem;"><i class="fa-solid fa-recycle"></i></div>
                         <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Recycle</h4>
                         <p style="color: var(--medium-gray);">Deposit bottles in our smart bins</p>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 0.5rem;">💰</div>
+                        <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 0.5rem;"><i class="fa-solid fa-coins"></i></div>
                         <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Earn Tokens</h4>
                         <p style="color: var(--medium-gray);">Get Eco-Tokens automatically</p>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 0.5rem;">🎁</div>
+                        <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 0.5rem;"><i class="fa-solid fa-gift"></i></div>
                         <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Redeem</h4>
                         <p style="color: var(--medium-gray);">Exchange tokens for rewards</p>
                     </div>

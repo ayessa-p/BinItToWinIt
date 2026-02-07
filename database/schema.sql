@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS events (
     event_date DATETIME,
     location VARCHAR(255),
     image_url VARCHAR(500),
+    thumbnail_url VARCHAR(500),
+    gallery_json TEXT,
     is_published BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

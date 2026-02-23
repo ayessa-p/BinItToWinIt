@@ -116,6 +116,12 @@ foreach ($rewards as $reward) {
     $rewards_by_category[$category][] = $reward;
 }
 
+// Services are now requested via Automation page (not redeemed here)
+$has_service_rewards = isset($rewards_by_category['Services']) && !empty($rewards_by_category['Services']);
+if (isset($rewards_by_category['Services'])) {
+    unset($rewards_by_category['Services']);
+}
+
 include '../includes/header.php';
 ?>
 
@@ -140,7 +146,7 @@ include '../includes/header.php';
             </div>
         <?php endif; ?>
         
-        <?php if (empty($rewards_by_category)): ?>
+        <?php if (empty($rewards_by_category) && !$has_service_rewards): ?>
             <div class="card" style="max-width: 600px; margin: 0 auto; text-align: center;">
                 <div class="card-body" style="padding: 3rem;">
                     <p style="color: var(--medium-gray); font-size: 1.1rem;">
@@ -149,6 +155,14 @@ include '../includes/header.php';
                 </div>
             </div>
         <?php else: ?>
+            <?php if ($has_service_rewards): ?>
+                <div style="text-align: center; margin: 2rem 0 3rem;">
+                    <a href="automation.php" class="btn btn-primary btn-large">
+                    Convert to Services ->
+                    </a>
+                </div>
+            <?php endif; ?>
+
             <?php foreach ($rewards_by_category as $category => $category_rewards): ?>
                 <div style="background: var(--light-blue-bg); border-radius: var(--radius-lg); padding: 1.5rem; margin: 3rem 0 1.5rem; border-left: 4px solid var(--azure-blue);">
                     <h2 style="color: var(--medium-blue-text); margin: 0; font-size: 1.8rem;">

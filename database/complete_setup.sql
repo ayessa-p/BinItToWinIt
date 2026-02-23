@@ -179,11 +179,7 @@ CREATE TABLE IF NOT EXISTS projects (
 
 -- Insert default rewards
 INSERT INTO rewards (name, description, token_cost, category, stock_quantity) VALUES
-('Printing Credits (10 pages)', '10 pages of printing credits at the computer lab', 50.00, 'Services', -1),
-('Printing Credits (20 pages)', '20 pages of printing credits at the computer lab', 90.00, 'Services', -1),
-('Internet Access (1 hour)', '1 hour of premium internet access', 30.00, 'Services', -1),
-('Internet Access (2 hours)', '2 hours of premium internet access', 55.00, 'Services', -1),
-('MTICS T-Shirt', 'Official MTICS organization t-shirt', 200.00, 'Merchandise', 50),
+('MTICS Shirt', 'Official MTICS organization t-shirt', 200.00, 'Merchandise', 50),
 ('MTICS Sticker Pack', 'Set of official MTICS stickers', 25.00, 'Merchandise', 100),
 ('USB Flash Drive (16GB)', '16GB USB flash drive', 150.00, 'Electronics', 20),
 ('Wireless Mouse', 'Ergonomic wireless mouse', 180.00, 'Electronics', 15);

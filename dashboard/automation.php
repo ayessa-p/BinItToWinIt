@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 require_login();
 
-$page_title = 'Resource & Service Automation';
+$page_title = 'Room Reservation & Service Automation';
 $user_id = get_user_id();
 $db = Database::getInstance()->getConnection();
 
@@ -10,13 +10,18 @@ $db = Database::getInstance()->getConnection();
 $message = '';
 $message_type = '';
 
-// Handle resource reservation
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reserve_resource'])) {
+// Fixed IT building rooms
+$rooms = ['RM101', 'RM102', 'RM103', 'RM201', 'RM202', 'RM203', 'RM301', 'RM302'];
+
+// Handle room reservation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reserve_room'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $message = 'Invalid security token.';
         $message_type = 'error';
     } else {
-        $resource_id = (int)($_POST['resource_id'] ?? 0);
+        $room_code = sanitize_input($_POST['room_code'] ?? '');
+        $purpose_type = sanitize_input($_POST['purpose_type'] ?? 'general');
+        $professor_name = sanitize_input($_POST['professor_name'] ?? '');
         $start_date = $_POST['start_date'] ?? '';
         $end_date = $_POST['end_date'] ?? '';
         $purpose = sanitize_input($_POST['purpose'] ?? '');
@@ -24,69 +29,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reserve_resource'])) 
         try {
             $db->beginTransaction();
             
-            // Check resource availability
-            $stmt = $db->prepare("
-                SELECT available_quantity, total_quantity, name, requires_approval, auto_approval,
-                       (SELECT COUNT(*) FROM resource_reservations 
-                        WHERE resource_id = ? AND status = 'approved' 
-                        AND ((start_date <= ? AND end_date > ?) OR (start_date < ? AND end_date >= ?))
-                ) as conflicting_reservations
-                FROM resources WHERE id = ? AND is_active = true
-            ");
-            $stmt->execute([$resource_id, $start_date, $start_date, $end_date, $end_date, $resource_id]);
-            $resource = $stmt->fetch();
-            
-            if (!$resource) {
-                throw new Exception('Resource not found.');
+            if (!in_array($room_code, $rooms, true)) {
+                throw new Exception('Invalid room selected.');
             }
-            
-            if ($resource['conflicting_reservations'] >= $resource['available_quantity']) {
-                throw new Exception('Resource not available for selected time period.');
+            if (!in_array($purpose_type, ['general', 'class'], true)) {
+                $purpose_type = 'general';
             }
-            
-            // Check automation rules for auto-approval
-            $auto_approve = false;
-            $stmt = $db->prepare("
-                SELECT actions FROM automation_rules 
-                WHERE rule_type = 'approval' AND is_active = true 
-                ORDER BY priority DESC
-            ");
-            $stmt->execute();
-            $rules = $stmt->fetchAll();
-            
-            foreach ($rules as $rule) {
-                $conditions = json_decode($rule['actions'], true);
-                if (isset($conditions['auto_approve']) && $conditions['auto_approve']) {
-                    $user_level = get_user_level($user_id);
-                    if (isset($conditions['user_level']) && $conditions['user_level'] === $user_level) {
-                        $auto_approve = true;
-                        break;
-                    }
+            if (empty($start_date) || empty($end_date)) {
+                throw new Exception('Please select start and end date/time.');
+            }
+            if (strtotime($start_date) === false || strtotime($end_date) === false) {
+                throw new Exception('Invalid date/time.');
+            }
+            if (strtotime($end_date) <= strtotime($start_date)) {
+                throw new Exception('End date/time must be after start date/time.');
+            }
+
+            if ($purpose_type === 'class') {
+                if ($professor_name === '') {
+                    throw new Exception('Please specify the professor for class reservations.');
                 }
+                $purpose = 'Class with Prof. ' . $professor_name . ' - ' . $purpose;
             }
-            
-            $status = $auto_approve ? 'approved' : 'pending';
-            $approved_by = $auto_approve ? $user_id : null;
-            $approved_at = $auto_approve ? date('Y-m-d H:i:s') : null;
-            
-            // Create reservation
+
+            // Prevent double-booking (blocks both pending and approved overlaps)
             $stmt = $db->prepare("
-                INSERT INTO resource_reservations 
-                (resource_id, user_id, start_date, end_date, purpose, status, approved_by, approved_at, auto_approval)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                SELECT COUNT(*) FROM room_reservations
+                WHERE room_code = ?
+                  AND status IN ('pending', 'approved')
+                  AND ((start_date <= ? AND end_date > ?) OR (start_date < ? AND end_date >= ?))
             ");
-            $stmt->execute([$resource_id, $user_id, $start_date, $end_date, $purpose, $status, $approved_by, $approved_at, $auto_approve]);
-            
-            // Update resource quantity if needed
-            if ($status === 'approved') {
-                $stmt = $db->prepare("UPDATE resources SET available_quantity = available_quantity - 1 WHERE id = ?");
-                $stmt->execute([$resource_id]);
+            $stmt->execute([$room_code, $start_date, $start_date, $end_date, $end_date]);
+            $conflicts = (int)$stmt->fetchColumn();
+            if ($conflicts > 0) {
+                throw new Exception('Room not available for selected time period.');
             }
+
+            $status = 'pending';
+
+            $stmt = $db->prepare("
+                INSERT INTO room_reservations
+                (room_code, user_id, start_date, end_date, purpose, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$room_code, $user_id, $start_date, $end_date, $purpose, $status]);
             
             $db->commit();
-            $message = $auto_approve ? 
-                'Reservation approved automatically!' : 
-                'Reservation submitted successfully! Pending admin approval.';
+            $message = 'Room reservation request submitted successfully! Pending admin approval.';
             $message_type = 'success';
             
         } catch (Exception $e) {
@@ -134,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_service'])) {
             // Calculate tokens based on automation rules
             $tokens_required = 0;
             $stmt = $db->prepare("
-                SELECT actions FROM automation_rules 
+                SELECT conditions, actions FROM automation_rules 
                 WHERE rule_type = 'pricing' AND is_active = true 
                 ORDER BY priority DESC
             ");
@@ -143,23 +132,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_service'])) {
             
             $user_level = get_user_level($user_id);
             foreach ($rules as $rule) {
-                $conditions = json_decode($rule['actions'], true);
-                if (isset($conditions['service_type']) && $conditions['service_type'] === $service_type) {
-                    if (isset($conditions['user_level']) && $conditions['user_level'] === $user_level) {
-                        if (isset($conditions['charge_tokens']) && $conditions['charge_tokens']) {
-                            // Use standard pricing
-                            if ($service_type === 'printing') {
-                                $pages = (int)($_POST['pages'] ?? 1);
-                                $stmt = $db->prepare("SELECT price_per_page FROM printing_services WHERE is_active = true LIMIT 1");
-                                $stmt->execute();
-                                $printing = $stmt->fetch();
-                                $tokens_required = $printing['price_per_page'] * $pages;
-                            } else {
-                                $tokens_required = 50.00; // Default service charge
-                            }
-                        }
-                    }
+                $rule_conditions = json_decode($rule['conditions'] ?? '{}', true);
+                $rule_actions = json_decode($rule['actions'] ?? '{}', true);
+                
+                if (($rule_conditions['service_type'] ?? null) !== $service_type) {
+                    continue;
                 }
+                if (($rule_conditions['user_level'] ?? null) !== $user_level) {
+                    continue;
+                }
+                if (empty($rule_actions['charge_tokens'])) {
+                    continue;
+                }
+                
+                // Use standard pricing
+                if ($service_type === 'printing') {
+                    $pages = max(1, (int)($_POST['pages'] ?? 1));
+                    $color = sanitize_input($_POST['color'] ?? 'bw');
+                    if (!in_array($color, ['bw', 'color'], true)) {
+                        $color = 'bw';
+                    }
+                    
+                    // Pick the active printing service matching color
+                    $stmt = $db->prepare("
+                        SELECT price_per_page
+                        FROM printing_services
+                        WHERE is_active = true AND color_options = ?
+                        ORDER BY price_per_page ASC
+                        LIMIT 1
+                    ");
+                    $stmt->execute([$color]);
+                    $printing = $stmt->fetch();
+                    $price_per_page = (float)($printing['price_per_page'] ?? 0);
+                    $tokens_required = $price_per_page * $pages;
+                } else {
+                    $tokens_required = 50.00; // Default service charge
+                }
+                
+                // First matching rule wins (rules are priority-ordered)
+                break;
             }
             
             // Create service request
@@ -191,31 +202,16 @@ function get_user_level($user_id) {
     return $user['is_admin'] ? 'admin' : 'student';
 }
 
-// Get available resources
-$resources = [];
+// Get user's current room reservations
+$user_room_reservations = [];
 $stmt = $db->prepare("
-    SELECT r.*, 
-           (SELECT COUNT(*) FROM resource_reservations rr 
-            WHERE rr.resource_id = r.id AND rr.status = 'approved' 
-            AND rr.end_date > NOW()) as active_reservations
-    FROM resources r 
-    WHERE r.is_active = true 
-    ORDER BY r.category, r.name
-");
-$stmt->execute();
-$resources = $stmt->fetchAll();
-
-// Get user's current reservations
-$user_reservations = [];
-$stmt = $db->prepare("
-    SELECT rr.*, r.name as resource_name, r.category as resource_category
-    FROM resource_reservations rr
-    JOIN resources r ON rr.resource_id = r.id
+    SELECT rr.*
+    FROM room_reservations rr
     WHERE rr.user_id = ? AND rr.end_date > NOW()
     ORDER BY rr.start_date DESC
 ");
 $stmt->execute([$user_id]);
-$user_reservations = $stmt->fetchAll();
+$user_room_reservations = $stmt->fetchAll();
 
 // Get user's service requests
 $user_requests = [];
@@ -247,7 +243,18 @@ include '../includes/header.php';
 
 <section class="section">
     <div class="container">
-        <h1 class="section-title">Resource & Service Automation</h1>
+        <h1 class="section-title">Services</h1>
+
+        <!-- Quick Access -->
+        <nav aria-label="Quick access" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center;">
+                <a href="#quick-pair-device" class="btn btn-secondary">Pair Device</a>
+                <a href="#quick-printing" class="btn btn-secondary">Printing</a>
+                <a href="#quick-equipment" class="btn btn-secondary">Equipment Borrowing</a>
+                <a href="#quick-room" class="btn btn-secondary">Room Reservation</a>
+                <a href="#quick-active-requests" class="btn btn-secondary">Your Active Requests</a>
+            </div>
+        </nav>
         
         <?php if ($message): ?>
             <div class="alert alert-<?php echo $message_type; ?>">
@@ -256,8 +263,8 @@ include '../includes/header.php';
         <?php endif; ?>
         
         <!-- Quick Actions -->
-        <div class="grid grid-3" style="margin-bottom: 3rem;">
-            <div class="card">
+        <div style="margin-bottom: 3rem; display: flex; flex-direction: column; gap: 1.5rem; align-items: center;">
+            <div id="quick-pair-device" class="card" style="width: 100%; max-width: 720px;">
                 <div class="card-header" style="text-align: center; padding: 1rem;">
                     <h3 class="card-title" style="margin: 0;">Pair Device</h3>
                 </div>
@@ -271,7 +278,7 @@ include '../includes/header.php';
                 </div>
             </div>
             
-            <div class="card">
+            <div id="quick-printing" class="card" style="width: 100%; max-width: 720px;">
                 <div class="card-header" style="text-align: center; padding: 1rem;">
                     <h3 class="card-title" style="margin: 0;">Printing</h3>
                 </div>
@@ -306,7 +313,7 @@ include '../includes/header.php';
                 </div>
             </div>
             
-            <div class="card">
+            <div id="quick-equipment" class="card" style="width: 100%; max-width: 720px;">
                 <div class="card-header" style="text-align: center; padding: 1rem;">
                     <h3 class="card-title" style="margin: 0;">Equipment Borrowing</h3>
                 </div>
@@ -352,90 +359,92 @@ include '../includes/header.php';
             </div>
         </div>
         
-        <!-- Resource Reservation -->
-        <div class="admin-section">
-            <h2 class="admin-section-title">Reserve Resources</h2>
-            
-            <div class="grid grid-3">
-                <?php foreach ($resources as $resource): ?>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title"><?php echo htmlspecialchars($resource['name']); ?></h3>
-                            <span class="badge badge-<?php echo $resource['category'] === 'equipment' ? 'success' : 'info'; ?>">
-                                <?php echo ucfirst($resource['category']); ?>
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <p><?php echo htmlspecialchars($resource['description']); ?></p>
-                            
-                            <div style="display: flex; justify-content: space-between; margin: 1rem 0;">
-                                <span>
-                                    <strong>Available:</strong> 
-                                    <?php echo $resource['available_quantity']; ?> / <?php echo $resource['total_quantity']; ?>
-                                </span>
-                                <span>
-                                    <strong>Location:</strong> 
-                                    <?php echo htmlspecialchars($resource['location']); ?>
-                                </span>
+        <!-- Room Reservation -->
+        <div id="quick-room" class="admin-section">
+            <div class="card" style="width: 100%; max-width: 720px; margin: 0 auto;">
+                <div class="card-header">
+                    <h3 class="card-title">Request a Room</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="" style="display: grid; gap: 1rem;">
+                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                        <input type="hidden" name="reserve_room" value="1">
+
+                        <div class="grid grid-2" style="gap: 1rem;">
+                            <div class="form-group">
+                                <label>Room:</label>
+                                <select name="room_code" required>
+                                    <option value="">Select room...</option>
+                                    <?php foreach ($rooms as $room): ?>
+                                        <option value="<?php echo htmlspecialchars($room); ?>"><?php echo htmlspecialchars($room); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            
-                            <?php if ($resource['available_quantity'] > 0): ?>
-                                <form method="POST" action="" style="margin-top: 1rem;">
-                                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-                                    <input type="hidden" name="reserve_resource" value="1">
-                                    <input type="hidden" name="resource_id" value="<?php echo $resource['id']; ?>">
-                                    
-                                    <div class="form-group">
-                                        <label>Start Date & Time:</label>
-                                        <input type="datetime-local" name="start_date" required>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label>End Date & Time:</label>
-                                        <input type="datetime-local" name="end_date" required>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label>Purpose:</label>
-                                        <textarea name="purpose" placeholder="Describe how you'll use this resource..." required></textarea>
-                                    </div>
-                                    
-                                    <button type="submit" class="btn btn-primary">
-                                        <?php echo $resource['requires_approval'] ? 'Request Reservation' : 'Reserve Now'; ?>
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <div class="alert alert-warning" style="margin-top: 1rem;">
-                                    Currently not available
-                                </div>
-                            <?php endif; ?>
+                            <div class="form-group">
+                                <label>Purpose Type:</label>
+                                <select name="purpose_type" id="purpose_type" required>
+                                    <option value="general">General</option>
+                                    <option value="class">Class</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
+
+                        <div class="grid grid-2" style="gap: 1rem;">
+                            <div class="form-group">
+                                <label>Start Date & Time:</label>
+                                <input type="datetime-local" name="start_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>End Date & Time:</label>
+                                <input type="datetime-local" name="end_date" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Purpose / Details:</label>
+                            <textarea
+                                name="purpose"
+                                placeholder="e.g., Group study, project meeting, consultation..."
+                                required
+                                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; resize: vertical;"
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group" id="professor_group" style="display: none;">
+                            <label>Professor (for class):</label>
+                            <input type="text" name="professor_name" id="professor_name" placeholder="e.g., Prof. Santos">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Request Room Reservation</button>
+                        <small style="color: var(--medium-gray);">
+                            Requests are reviewed by admins. Pending requests also block the same time slot.
+                        </small>
+                    </form>
+                </div>
             </div>
         </div>
         
         <!-- Current Reservations & Requests -->
-        <div class="admin-section">
+        <div id="quick-active-requests" class="admin-section">
             <h2 class="admin-section-title">Your Active Requests</h2>
             
             <div class="grid grid-2">
-                <!-- Resource Reservations -->
+                <!-- Room Reservations -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Resource Reservations</h3>
+                        <h3 class="card-title">Room Reservations</h3>
                     </div>
                     <div class="card-body">
-                        <?php if (empty($user_reservations)): ?>
+                        <?php if (empty($user_room_reservations)): ?>
                             <p style="color: var(--medium-gray); text-align: center; padding: 2rem;">
                                 No active reservations
                             </p>
                         <?php else: ?>
-                            <?php foreach ($user_reservations as $reservation): ?>
+                            <?php foreach ($user_room_reservations as $reservation): ?>
                                 <div style="padding: 1rem; border-bottom: 1px solid var(--light-gray); margin-bottom: 1rem;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
                                         <div>
-                                            <strong><?php echo htmlspecialchars($reservation['resource_name'] ?? ''); ?></strong>
+                                            <strong><?php echo htmlspecialchars($reservation['room_code'] ?? ''); ?></strong>
                                             <br>
                                             <small style="color: var(--medium-gray);">
                                                 <?php echo date('M j, Y g:i A', strtotime($reservation['start_date'] ?? '')); ?> - 
@@ -532,5 +541,43 @@ include '../includes/header.php';
         </div>
     </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const purposeType = document.getElementById('purpose_type');
+    const professorGroup = document.getElementById('professor_group');
+    const professorInput = document.getElementById('professor_name');
+
+    if (!purposeType || !professorGroup || !professorInput) {
+        return;
+    }
+
+    function updateProfessorField() {
+        if (purposeType.value === 'class') {
+            professorGroup.style.display = '';
+            professorInput.required = true;
+        } else {
+            professorGroup.style.display = 'none';
+            professorInput.required = false;
+            professorInput.value = '';
+        }
+    }
+
+    purposeType.addEventListener('change', updateProfessorField);
+    updateProfessorField();
+
+    // Smooth scroll for quick access links
+    document.querySelectorAll('a[href^="#quick-"]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href').substring(1);
+            const target = document.getElementById(targetId);
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+});
+</script>
 
 <?php include '../includes/footer.php'; ?>

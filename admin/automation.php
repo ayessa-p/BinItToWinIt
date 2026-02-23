@@ -138,8 +138,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_service_reques
             ");
             $stmt->execute([$status, $assigned_to, $completion_notes, $tokens_charged, $status, $request_id]);
             
-            // Charge tokens if completed
-            if ($status === 'completed' && $tokens_charged > 0) {
+            // Charge tokens only on transition to completed (avoid double-charging)
+            if ($status === 'completed' && ($request['status'] ?? '') !== 'completed' && $tokens_charged > 0) {
                 // Update user tokens
                 $stmt = $db->prepare("UPDATE users SET eco_tokens = eco_tokens - ? WHERE id = ?");
                 $stmt->execute([$tokens_charged, $request['user_id']]);
@@ -352,6 +352,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_internet_plan'
 }
 
 
+// Handle room reservation approval/rejection
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_room_reservation'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $message = 'Invalid security token.';
+        $message_type = 'error';
+    } else {
+        $reservation_id = (int)($_POST['reservation_id'] ?? 0);
+        $action = sanitize_input($_POST['action'] ?? '');
+        $notes = sanitize_input($_POST['notes'] ?? '');
+
+        if ($reservation_id <= 0 || !in_array($action, ['approve', 'reject'], true)) {
+            $message = 'Invalid room reservation request.';
+            $message_type = 'error';
+        } else {
+            try {
+                $db->beginTransaction();
+
+                // Lock row to avoid race conditions
+                $stmt = $db->prepare("SELECT * FROM room_reservations WHERE id = ? FOR UPDATE");
+                $stmt->execute([$reservation_id]);
+                $reservation = $stmt->fetch();
+
+                if (!$reservation) {
+                    throw new Exception('Room reservation not found.');
+                }
+                if (($reservation['status'] ?? '') !== 'pending') {
+                    throw new Exception('Only pending reservations can be updated.');
+                }
+
+                if ($action === 'approve') {
+                    // Ensure no overlap with other approved reservations
+                    $stmt = $db->prepare("
+                        SELECT COUNT(*) FROM room_reservations
+                        WHERE room_code = ?
+                          AND status = 'approved'
+                          AND id <> ?
+                          AND ((start_date <= ? AND end_date > ?) OR (start_date < ? AND end_date >= ?))
+                    ");
+                    $stmt->execute([
+                        $reservation['room_code'],
+                        $reservation_id,
+                        $reservation['start_date'],
+                        $reservation['start_date'],
+                        $reservation['end_date'],
+                        $reservation['end_date']
+                    ]);
+                    $conflicts = (int)$stmt->fetchColumn();
+                    if ($conflicts > 0) {
+                        throw new Exception('Cannot approve: room is already booked for that time period.');
+                    }
+
+                    $stmt = $db->prepare("
+                        UPDATE room_reservations
+                        SET status = 'approved',
+                            approved_by = ?,
+                            approved_at = NOW(),
+                            approval_notes = ?,
+                            updated_at = NOW()
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$admin_user_id, $notes, $reservation_id]);
+
+                    $message = 'Room reservation approved successfully!';
+                    $message_type = 'success';
+                } else {
+                    $stmt = $db->prepare("
+                        UPDATE room_reservations
+                        SET status = 'rejected',
+                            approved_by = ?,
+                            approved_at = NOW(),
+                            rejection_reason = ?,
+                            updated_at = NOW()
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$admin_user_id, $notes, $reservation_id]);
+
+                    $message = 'Room reservation rejected successfully!';
+                    $message_type = 'success';
+                }
+
+                $db->commit();
+            } catch (Exception $e) {
+                $db->rollBack();
+                $message = 'Database error: ' . $e->getMessage();
+                $message_type = 'error';
+            }
+        }
+    }
+}
+
 // Get all resources
 $resources = [];
 $stmt = $db->prepare("
@@ -362,6 +452,20 @@ $stmt = $db->prepare("
 ");
 $stmt->execute();
 $resources = $stmt->fetchAll();
+
+// Get pending/upcoming room reservations
+$room_reservation_requests = [];
+$stmt = $db->prepare("
+    SELECT rr.*, u.full_name AS user_name, u.student_id AS user_student_id
+    FROM room_reservations rr
+    JOIN users u ON rr.user_id = u.id
+    WHERE rr.end_date > NOW()
+    ORDER BY FIELD(rr.status, 'pending', 'approved', 'rejected', 'cancelled', 'completed', 'no_show'),
+             rr.start_date ASC
+    LIMIT 200
+");
+$stmt->execute();
+$room_reservation_requests = $stmt->fetchAll();
 
 // Get all pending service requests
 $pending_requests = [];
@@ -724,6 +828,96 @@ include '../includes/admin_header.php';
             </div>
         </div>
 
+        <!-- Room Reservation Management -->
+        <div class="admin-section" id="room-reservations">
+            <h2 class="admin-section-title">🏫 Room Reservation Management</h2>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Room Reservations (IT Building)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Room</th>
+                                    <th>User</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($room_reservation_requests)): ?>
+                                    <tr>
+                                        <td colspan="7" style="text-align:center; padding: var(--spacing-lg); color: var(--medium-gray);">
+                                            No room reservations found
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($room_reservation_requests as $rr): ?>
+                                        <tr>
+                                            <td><strong><?php echo htmlspecialchars($rr['room_code'] ?? ''); ?></strong></td>
+                                            <td>
+                                                <?php echo htmlspecialchars($rr['user_name'] ?? ''); ?>
+                                                <br>
+                                                <small style="color: var(--medium-gray);"><?php echo htmlspecialchars($rr['user_student_id'] ?? ''); ?></small>
+                                            </td>
+                                            <td><small><?php echo date('M j, Y g:i A', strtotime($rr['start_date'] ?? '')); ?></small></td>
+                                            <td><small><?php echo date('M j, Y g:i A', strtotime($rr['end_date'] ?? '')); ?></small></td>
+                                            <td style="max-width: 380px;">
+                                                <small><?php echo htmlspecialchars($rr['purpose'] ?? ''); ?></small>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-<?php
+                                                    echo match($rr['status'] ?? '') {
+                                                        'pending' => 'warning',
+                                                        'approved' => 'success',
+                                                        'rejected' => 'danger',
+                                                        'cancelled' => 'secondary',
+                                                        default => 'secondary'
+                                                    };
+                                                ?>">
+                                                    <?php echo ucfirst(str_replace('_', ' ', $rr['status'] ?? '')); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php if (($rr['status'] ?? '') === 'pending'): ?>
+                                                    <form method="POST" action="#room-reservations" style="display:flex; gap:.5rem; flex-wrap: wrap; align-items:center;">
+                                                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                                                        <input type="hidden" name="update_room_reservation" value="1">
+                                                        <input type="hidden" name="reservation_id" value="<?php echo (int)($rr['id'] ?? 0); ?>">
+                                                        <input
+                                                            type="text"
+                                                            name="notes"
+                                                            class="admin-form-input"
+                                                            placeholder="Notes (optional)"
+                                                            style="min-width: 180px;"
+                                                        >
+                                                        <button type="submit" name="action" value="approve" class="admin-btn admin-btn-primary admin-btn-sm">
+                                                            Approve
+                                                        </button>
+                                                        <button type="submit" name="action" value="reject" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="return confirm('Reject this room reservation?')">
+                                                            Reject
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <span style="color: var(--medium-gray);">—</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Service Request Management -->
         <div class="admin-section">
             <h2 class="admin-section-title">🔧 Service Request Management</h2>
@@ -968,6 +1162,34 @@ include '../includes/admin_header.php';
                                                     <input type="hidden" name="tokens_charged" value="0">
                                                     <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="return confirm('Reject this request?')">
                                                         Reject
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+
+                                            <?php if ($request['status'] === 'in_progress'): ?>
+                                                <form method="POST" action="" style="display:inline;">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                                                    <input type="hidden" name="update_service_request" value="1">
+                                                    <input type="hidden" name="request_id" value="<?php echo (int)$request['id']; ?>">
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <input type="hidden" name="assigned_to" value="<?php echo (int)($request['assigned_to'] ?? $admin_user_id); ?>">
+                                                    <input type="hidden" name="completion_notes" value="<?php echo htmlspecialchars((string)($request['completion_notes'] ?? '')); ?>">
+                                                    <input type="hidden" name="tokens_charged" value="<?php echo htmlspecialchars((string)($request['tokens_required'] ?? $request['tokens_charged'] ?? 0)); ?>">
+                                                    <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm" onclick="return confirm('Mark this request as completed? Tokens will be deducted.')">
+                                                        Complete
+                                                    </button>
+                                                </form>
+
+                                                <form method="POST" action="" style="display:inline;">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                                                    <input type="hidden" name="update_service_request" value="1">
+                                                    <input type="hidden" name="request_id" value="<?php echo (int)$request['id']; ?>">
+                                                    <input type="hidden" name="status" value="cancelled">
+                                                    <input type="hidden" name="assigned_to" value="<?php echo (int)($request['assigned_to'] ?? $admin_user_id); ?>">
+                                                    <input type="hidden" name="completion_notes" value="<?php echo htmlspecialchars((string)($request['completion_notes'] ?? '')); ?>">
+                                                    <input type="hidden" name="tokens_charged" value="0">
+                                                    <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="return confirm('Cancel this request?')">
+                                                        Cancel
                                                     </button>
                                                 </form>
                                             <?php endif; ?>

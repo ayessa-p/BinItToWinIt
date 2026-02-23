@@ -270,6 +270,30 @@ CREATE TABLE IF NOT EXISTS resource_reservations (
     INDEX idx_end_date (end_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Room reservations table (IT Building rooms)
+CREATE TABLE IF NOT EXISTS room_reservations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    room_code VARCHAR(20) NOT NULL,
+    user_id INT NOT NULL,
+    start_date DATETIME NOT NULL,
+    end_date DATETIME NOT NULL,
+    purpose TEXT,
+    status ENUM('pending', 'approved', 'rejected', 'cancelled', 'completed', 'no_show') DEFAULT 'pending',
+    approval_notes TEXT,
+    rejection_reason TEXT,
+    approved_by INT NULL,
+    approved_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_room_code (room_code),
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_start_date (start_date),
+    INDEX idx_end_date (end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Service requests table
 CREATE TABLE IF NOT EXISTS service_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,

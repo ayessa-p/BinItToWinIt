@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $event_date = $_POST['event_date'] ?? '';
         $location = sanitize_input($_POST['location'] ?? '');
         $is_published = isset($_POST['is_published']) ? 1 : 0;
+        $attendance_enabled = isset($_POST['attendance_enabled']) ? 1 : 0;
 
         // Check if DB has thumbnail/gallery columns
         $has_thumbnail = false;
@@ -120,16 +121,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($id > 0) {
                         $stmt = $db->prepare("
                             UPDATE events SET title = ?, description = ?, event_date = ?, 
-                            location = ?, image_url = ?, thumbnail_url = ?, gallery_json = ?, is_published = ? WHERE id = ?
+                            location = ?, image_url = ?, thumbnail_url = ?, gallery_json = ?, is_published = ?, attendance_enabled = ? WHERE id = ?
                         ");
-                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $id]);
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $attendance_enabled, $id]);
                         $message = 'Event updated successfully!';
                     } else {
                         $stmt = $db->prepare("
-                            INSERT INTO events (title, description, event_date, location, image_url, thumbnail_url, gallery_json, is_published) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO events (title, description, event_date, location, image_url, thumbnail_url, gallery_json, is_published, attendance_enabled) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published]);
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $attendance_enabled]);
                         $message = 'Event created successfully!';
                     }
                 } else {
@@ -137,16 +138,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($id > 0) {
                         $stmt = $db->prepare("
                             UPDATE events SET title = ?, description = ?, event_date = ?, 
-                            location = ?, image_url = ?, is_published = ? WHERE id = ?
+                            location = ?, image_url = ?, is_published = ?, attendance_enabled = ? WHERE id = ?
                         ");
-                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $id]);
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $attendance_enabled, $id]);
                         $message = 'Event updated successfully!';
                     } else {
                         $stmt = $db->prepare("
-                            INSERT INTO events (title, description, event_date, location, image_url, is_published) 
-                            VALUES (?, ?, ?, ?, ?, ?)
+                            INSERT INTO events (title, description, event_date, location, image_url, is_published, attendance_enabled) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published]);
+                        $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $attendance_enabled]);
                         $message = 'Event created successfully!';
                     }
                 }
@@ -171,6 +172,13 @@ if (isset($_GET['delete'])) {
         $message = 'Error deleting event.';
         $message_type = 'error';
     }
+}
+
+// Handle manage attendance redirect
+if (isset($_GET['manage_attendance'])) {
+    $event_id = (int)$_GET['manage_attendance'];
+    header('Location: manage_attendance.php?event_id=' . $event_id);
+    exit;
 }
 
 // Get event to edit
@@ -285,6 +293,17 @@ include '../includes/admin_header.php';
                     </label>
                 </div>
                 
+                <div class="admin-form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" name="attendance_enabled" 
+                               <?php echo ($edit_event && $edit_event['attendance_enabled']) ? 'checked' : ''; ?>>
+                        <span>Enable Attendance Tracking</span>
+                    </label>
+                    <small style="color: var(--medium-gray); display: block; margin-top: 0.5rem;">
+                        Allow users to submit attendance with proof photos and earn tokens
+                    </small>
+                </div>
+                
                 <button type="submit" class="admin-btn admin-btn-primary">
                     <?php echo $edit_event ? 'Update Event' : 'Create Event'; ?>
                 </button>
@@ -304,6 +323,7 @@ include '../includes/admin_header.php';
                             <th>Title</th>
                             <th>Date</th>
                             <th>Location</th>
+                            <th>Participants</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -342,15 +362,44 @@ include '../includes/admin_header.php';
                                 <td><?php echo date('M j, Y g:i A', strtotime($event['event_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($event['location'] ?: 'N/A'); ?></td>
                                 <td>
-                                    <span class="badge <?php echo $event['is_published'] ? 'badge-success' : 'badge-warning'; ?>">
-                                        <?php echo $event['is_published'] ? 'Published' : 'Draft'; ?>
-                                    </span>
+                                    <?php
+                                        // Get attendance count for this event
+                                        $stmt_att = $db->prepare("
+                                            SELECT 
+                                                COUNT(*) as total,
+                                                COUNT(CASE WHEN attendance_status = 'approved' THEN 1 END) as approved
+                                            FROM event_attendance 
+                                            WHERE event_id = ?
+                                        ");
+                                        $stmt_att->execute([$event['id']]);
+                                        $att_stats = $stmt_att->fetch();
+                                        echo "<span style='color: var(--primary-blue); font-weight: bold;'>" . $att_stats['approved'] . "</span>";
+                                        if ($att_stats['total'] > $att_stats['approved']) {
+                                            echo " <small style='color: orange;'>(" . ($att_stats['total'] - $att_stats['approved']) . " pending)</small>";
+                                        }
+                                    ?>
                                 </td>
                                 <td>
-                                    <a href="?edit=<?php echo $event['id']; ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Edit</a>
-                                    <a href="?delete=<?php echo $event['id']; ?>" 
-                                       class="admin-btn admin-btn-danger admin-btn-sm"
-                                       onclick="return confirm('Are you sure you want to delete this event?');">Delete</a>
+                                    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                        <span class="badge <?php echo $event['is_published'] ? 'badge-success' : 'badge-warning'; ?>">
+                                            <?php echo $event['is_published'] ? 'Published' : 'Draft'; ?>
+                                        </span>
+                                        <?php if ($event['attendance_enabled']): ?>
+                                            <span class="badge badge-info">Attendance ON</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <a href="?edit=<?php echo $event['id']; ?>" class="admin-btn admin-btn-secondary admin-btn-sm" style="width: 100%; text-align: center;">Edit</a>
+                                        <a href="?delete=<?php echo $event['id']; ?>" 
+                                           class="admin-btn admin-btn-danger admin-btn-sm"
+                                           style="width: 100%; text-align: center;"
+                                           onclick="return confirm('Are you sure you want to delete this event?');">Delete</a>
+                                        <?php if ($event['attendance_enabled']): ?>
+                                            <a href="?manage_attendance=<?php echo $event['id']; ?>" class="admin-btn admin-btn-primary admin-btn-sm" style="width: 100%; text-align: center;">Manage Attendance</a>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

@@ -45,47 +45,102 @@ include 'includes/header.php';
             </div>
         </div>
         
-        <h2 class="section-title" style="margin-top: 4rem;">Our Core Values</h2>
-        <div class="grid grid-4" style="margin-top: 3rem;">
-            <div class="card" style="text-align: center;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">💡</div>
-                <h4 style="color: var(--text-dark); margin-bottom: 0.5rem; font-weight: 600;">Innovation</h4>
-                <p style="color: var(--dark-gray);">Embracing new technologies and creative solutions</p>
-            </div>
-            
-            <div class="card" style="text-align: center;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🤝</div>
-                <h4 style="color: var(--text-dark); margin-bottom: 0.5rem; font-weight: 600;">Collaboration</h4>
-                <p style="color: var(--dark-gray);">Working together to achieve common goals</p>
-            </div>
-            
-            <div class="card" style="text-align: center;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🌱</div>
-                <h4 style="color: var(--text-dark); margin-bottom: 0.5rem; font-weight: 600;">Sustainability</h4>
-                <p style="color: var(--dark-gray);">Promoting environmental responsibility</p>
-            </div>
-            
-            <div class="card" style="text-align: center;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📚</div>
-                <h4 style="color: var(--text-dark); margin-bottom: 0.5rem; font-weight: 600;">Education</h4>
-                <p style="color: var(--dark-gray);">Continuous learning and knowledge sharing</p>
-            </div>
-        </div>
-        
-        <h2 class="section-title" style="margin-top: 4rem;">Organization Officers</h2>
+        <h2 class="section-title" style="margin-top: 4rem;">MTICS Officers - Academic Year 2025-2026</h2>
         <div style="max-width: 900px; margin: 3rem auto;">
             <p style="text-align: center; color: var(--dark-gray); font-size: 1.1rem; margin-bottom: 2rem;">
                 Our dedicated team of officers works tirelessly to organize events, 
                 manage projects, and support our members. Meet the leaders driving 
                 MTICS forward!
             </p>
-            <div class="card" style="text-align: center; padding: 3rem;">
-                <p style="color: var(--text-dark); font-size: 1.1rem;">
-                    <strong>Officer information will be displayed here.</strong><br>
-                    Contact us to learn more about our current leadership team.
-                </p>
+            <div class="grid grid-2" style="margin-bottom: 2rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Executive Officers</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive President</h4>
+                            <p style="color: var(--dark-gray);">Jerome Steven Rosario</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Vice President</h4>
+                            <p style="color: var(--dark-gray);">Hanna Clerdee Cruz</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Vice President For Internal Affairs</h4>
+                            <p style="color: var(--dark-gray);">Ianzae Ryan Ego</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Vice President For External Affairs</h4>
+                            <p style="color: var(--dark-gray);">Sachzie Sofia Ilagan</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Documentation</h4>
+                            <p style="color: var(--dark-gray);">Cristel Kate Famini</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Finance</h4>
+                            <p style="color: var(--dark-gray);">Kimberly Eledia</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Audit</h4>
+                            <p style="color: var(--dark-gray);">Mary Pauline Calungsod</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Information</h4>
+                            <p style="color: var(--dark-gray);">Lord Cedric Vila</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Activities and Programs</h4>
+                            <p style="color: var(--dark-gray);">Kim Jensen Yebes</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Logistics</h4>
+                            <p style="color: var(--dark-gray);">Krsmur Chelvin Lacorte</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Assistant Officers</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Vice President For Internal Affairs</h4>
+                            <p style="color: var(--dark-gray);">Ayessa Denisse Pili</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Vice President For External Affairs</h4>
+                            <p style="color: var(--dark-gray);">Dion Ongaria</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Documentation</h4>
+                            <p style="color: var(--dark-gray);">Lance Grant Haboc</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Finance</h4>
+                            <p style="color: var(--dark-gray);">Elijah Neil Gallardo</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Audit</h4>
+                            <p style="color: var(--dark-gray);">Julia Faye Datang</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Information</h4>
+                            <p style="color: var(--dark-gray);">Trisha Mia Morales</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Activities and Programs</h4>
+                            <p style="color: var(--dark-gray);">John Regan Asino</p>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Logistics</h4>
+                            <p style="color: var(--dark-gray);">Marcus Iñigo Aristain</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
         
         <div style="text-align: center; margin-top: 3rem;">
             <a href="contact.php" class="btn btn-primary btn-large">Contact Us</a>

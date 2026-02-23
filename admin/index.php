@@ -38,6 +38,39 @@ $stats['total_rewards'] = $stmt->fetchColumn();
 $stmt = $db->query("SELECT COUNT(*) as count FROM redemptions");
 $stats['total_redemptions'] = $stmt->fetchColumn();
 
+// Service requests statistics
+try {
+    $stmt = $db->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'pending'");
+    $stats['pending_service_requests'] = $stmt->fetchColumn();
+} catch (Exception $e) {
+    $stats['pending_service_requests'] = 0;
+    error_log("Service requests query error: " . $e->getMessage());
+}
+
+try {
+    $stmt = $db->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'in_progress'");
+    $stats['in_progress_service_requests'] = $stmt->fetchColumn();
+} catch (Exception $e) {
+    $stats['in_progress_service_requests'] = 0;
+    error_log("Service requests query error: " . $e->getMessage());
+}
+
+try {
+    $stmt = $db->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'completed' AND DATE(created_at) = CURDATE()");
+    $stats['completed_service_requests_today'] = $stmt->fetchColumn();
+} catch (Exception $e) {
+    $stats['completed_service_requests_today'] = 0;
+    error_log("Service requests query error: " . $e->getMessage());
+}
+
+try {
+    $stmt = $db->query("SELECT SUM(tokens_charged) as total FROM service_requests WHERE status = 'completed' AND DATE(created_at) = CURDATE()");
+    $stats['tokens_earned_today'] = $stmt->fetchColumn() ?: 0;
+} catch (Exception $e) {
+    $stats['tokens_earned_today'] = 0;
+    error_log("Service requests query error: " . $e->getMessage());
+}
+
 // Recent activities
 $stmt = $db->prepare("
     SELECT ra.*, u.full_name, u.student_id 
@@ -95,16 +128,47 @@ include '../includes/admin_header.php';
                     <p>Available Rewards</p>
                 </div>
             </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fa-solid fa-cogs"></i></div>
+                <div class="stat-info">
+                    <h3><?php echo number_format($stats['pending_service_requests']); ?></h3>
+                    <p>Pending Services</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fa-solid fa-clock"></i></div>
+                <div class="stat-info">
+                    <h3><?php echo number_format($stats['in_progress_service_requests']); ?></h3>
+                    <p>In Progress</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fa-solid fa-coins"></i></div>
+                <div class="stat-info">
+                    <h3><?php echo format_tokens($stats['tokens_earned_today']); ?></h3>
+                    <p>Tokens Earned Today</p>
+                </div>
+            </div>
         </div>
         
         <!-- Management Sections -->
         <div class="admin-section">
             <h2 class="admin-section-title">Quick Actions</h2>
+            
             <div class="action-grid">
                 <a href="rewards.php" class="action-card">
                     <div class="action-icon"><i class="fa-solid fa-gift"></i></div>
                     <h3>Rewards & Stocks</h3>
                     <p>Edit rewards and update stock quantities</p>
+                </a>
+                
+                <a href="automation.php" class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-cogs"></i></div>
+                    <h3>Services</h3>
+                    <p>Manage printing, internet & equipment requests</p>
                 </a>
                 
                 <a href="events.php" class="action-card">
@@ -141,6 +205,12 @@ include '../includes/admin_header.php';
                     <div class="action-icon"><i class="fa-solid fa-circle-check"></i></div>
                     <h3>Redemptions</h3>
                     <p>Manage reward redemptions</p>
+                </a>
+                
+                <a href="sensor_monitor.php" class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-microchip"></i></div>
+                    <h3>Sensor Monitor</h3>
+                    <p>View live bin & sensor status</p>
                 </a>
                 
                 <a href="api_keys.php" class="action-card">

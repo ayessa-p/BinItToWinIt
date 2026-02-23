@@ -31,7 +31,8 @@
                         <li><a href="<?php echo SITE_URL; ?>/index.php" class="nav-link">Home</a></li>
                         <li><a href="<?php echo SITE_URL; ?>/about.php" class="nav-link">About</a></li>
                         <li><a href="<?php echo SITE_URL; ?>/projects.php" class="nav-link">Projects</a></li>
-                        <li><a href="<?php echo SITE_URL; ?>/news.php" class="nav-link">News</a></li>
+                        <li><a href="<?php echo SITE_URL; ?>/news.php" class="nav-link">Events</a></li>
+                        <li><a href="<?php echo SITE_URL; ?>/dashboard/automation.php" class="nav-link">Services</a></li>
                         <li><a href="<?php echo SITE_URL; ?>/contact.php" class="nav-link">Contact</a></li>
                         <?php if (is_logged_in()): ?>
                             <?php if (is_admin()): ?>

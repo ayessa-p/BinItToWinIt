@@ -21,21 +21,20 @@ try {
     <div class="container">
         <div class="hero-content-block">
             <div class="hero-text-content">
-                <span class="hero-label">Upcoming Event</span>
-                <h1 class="hero-title">We are going to arrange a get together</h1>
-                <p class="hero-description">
-                    Join us for an exciting event where we'll showcase our latest projects, 
-                    including the innovative "Bin It to Win It" recycling program. Connect 
-                    with fellow students and learn about how technology can drive environmental change.
+                <span class="hero-label" style="font-size: 0.9rem;">Project</span>
+                <h1 class="hero-title" style="font-size: 2.2rem; margin-bottom: 1rem;">Bin It to Win It</h1>
+                <p class="hero-description" style="font-size: 1rem; line-height: 1.6;">
+                    An innovative recycling initiative that combines environmental consciousness with technology. 
+                    Using smart sensors integrated into recycling bins, we track recycling activities and reward 
+                    students with Eco-Tokens for their contributions to sustainability. This project demonstrates 
+                    how IoT technology can create positive behavioral change while promoting environmental responsibility.
                 </p>
                 <div style="margin-top: var(--spacing-md);">
-                    <a href="projects.php#bin-it-to-win-it" class="btn btn-secondary btn-large">JOIN EVENT</a>
+                    <a href="projects.php#bin-it-to-win-it" class="btn btn-secondary btn-large" style="font-size: 1rem;">LEARN MORE</a>
                 </div>
             </div>
             <div>
-                <div style="width: 100%; height: 300px; background: rgba(255, 255, 255, 0.1); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, 0.7);">
-                    <span style="font-size: 0.9rem;">Event Image</span>
-                </div>
+                <img src="projectpic.png" alt="Bin It to Win It Project" style="width: 100%; height: 300px; object-fit: cover; border-radius: var(--radius-md);">
             </div>
         </div>
     </div>

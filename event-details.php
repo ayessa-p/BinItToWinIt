@@ -37,6 +37,35 @@ try {
     $all_events = [];
 }
 
+// Get attendance statistics
+$attendance_stats = [];
+$user_attendance = null;
+try {
+    // Get event attendance stats
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as total_attendees,
+            COUNT(CASE WHEN attendance_status = 'approved' THEN 1 END) as approved_attendees
+        FROM event_attendance 
+        WHERE event_id = ?
+    ");
+    $stmt->execute([$event_id]);
+    $attendance_stats = $stmt->fetch();
+    
+    // Check if user has already submitted attendance
+    if (isset($_SESSION['user_id'])) {
+        $stmt = $db->prepare("
+            SELECT attendance_status, submitted_at, proof_image 
+            FROM event_attendance 
+            WHERE event_id = ? AND user_id = ?
+        ");
+        $stmt->execute([$event_id, $_SESSION['user_id']]);
+        $user_attendance = $stmt->fetch();
+    }
+} catch (PDOException $e) {
+    $attendance_stats = ['total_attendees' => 0, 'approved_attendees' => 0];
+}
+
 include 'includes/header.php';
 ?>
 
@@ -79,6 +108,21 @@ include 'includes/header.php';
                     <?php echo nl2br(htmlspecialchars($event['description'])); ?>
                 </div>
                 
+                <!-- Attendance Statistics -->
+                <div class="attendance-stats" style="background: var(--light-gray); padding: 1rem; border-radius: var(--radius-md); margin: 1.5rem 0;">
+                    <h4 style="color: var(--primary-blue); margin-bottom: 0.5rem;">Attendance Information</h4>
+                    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                        <div>
+                            <strong>Total Participants:</strong> 
+                            <span style="color: var(--primary-blue); font-size: 1.2rem;"><?php echo $attendance_stats['approved_attendees']; ?></span>
+                        </div>
+                        <div>
+                            <strong>Pending Approval:</strong> 
+                            <span style="color: orange;"><?php echo $attendance_stats['total_attendees'] - $attendance_stats['approved_attendees']; ?></span>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Event Gallery -->
                 <?php
                     $event_gallery = [];
@@ -116,6 +160,70 @@ include 'includes/header.php';
                     </div>
                 <?php endif; ?>
                 
+                <!-- Attendance Section -->
+                <?php if ($event['attendance_enabled'] && isset($_SESSION['user_id'])): ?>
+                    <div class="attendance-section" style="margin-top: 2rem; padding: 1.5rem; border: 2px solid var(--primary-blue); border-radius: var(--radius-md);">
+                        <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">Event Attendance</h3>
+                        
+                        <?php if ($user_attendance): ?>
+                            <div class="attendance-status" style="padding: 1rem; border-radius: var(--radius-md);">
+                                <?php if ($user_attendance['attendance_status'] === 'approved'): ?>
+                                    <div style="color: green; font-weight: bold; margin-bottom: 0.5rem;">
+                                        ✓ Your attendance has been approved! You earned 10 tokens.
+                                    </div>
+                                <?php elseif ($user_attendance['attendance_status'] === 'pending'): ?>
+                                    <div style="color: orange; font-weight: bold; margin-bottom: 0.5rem;">
+                                        ⏳ Your attendance is pending approval.
+                                    </div>
+                                <?php else: ?>
+                                    <div style="color: red; font-weight: bold; margin-bottom: 0.5rem;">
+                                        ❌ Your attendance was rejected.
+                                    </div>
+                                <?php endif; ?>
+                                <div style="font-size: 0.9rem; color: #666;">
+                                    Submitted: <?php echo date('F j, Y g:i A', strtotime($user_attendance['submitted_at'])); ?>
+                                </div>
+                                <?php if (!empty($user_attendance['proof_image'])): ?>
+                                    <div style="margin-top: 1rem;">
+                                        <strong>Your proof image:</strong><br>
+                                        <img src="<?php echo SITE_URL . '/' . htmlspecialchars($user_attendance['proof_image']); ?>" 
+                                             alt="Proof of attendance" 
+                                             style="max-width: 300px; border-radius: var(--radius-md); margin-top: 0.5rem;">
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="attendance-form">
+                                <p style="margin-bottom: 1rem;">Record your attendance for this event and earn 10 tokens!</p>
+                                <form id="attendanceForm" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <input type="hidden" name="event_id" value="<?php echo $event_id; ?>">
+                                    
+                                    <div>
+                                        <label for="proof_image" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                                            Upload Proof Image *<br>
+                                            <small style="font-weight: normal; color: #666;">Please upload a photo showing you attended this event</small>
+                                        </label>
+                                        <input type="file" 
+                                               id="proof_image" 
+                                               name="proof_image" 
+                                               accept="image/*" 
+                                               required
+                                               style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: var(--radius-md);">
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary" style="align-self: flex-start;">
+                                        Submit Attendance
+                                    </button>
+                                </form>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php elseif ($event['attendance_enabled'] && !isset($_SESSION['user_id'])): ?>
+                    <div class="attendance-login-prompt" style="margin-top: 2rem; padding: 1rem; background: var(--light-gray); border-radius: var(--radius-md); text-align: center;">
+                        <p>Please <a href="auth/login.php" style="color: var(--primary-blue); font-weight: bold;">log in</a> to record your attendance for this event.</p>
+                    </div>
+                <?php endif; ?>
+                
                 <div style="text-align: center; margin-top: 2rem;">
                     <a href="news.php" class="btn btn-secondary">Back to Events</a>
                 </div>
@@ -123,5 +231,64 @@ include 'includes/header.php';
         </div>
     </div>
 </section>
+
+<script>
+document.getElementById('attendanceForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    try {
+        const response = await fetch('api/event_attendance.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.style.cssText = 'background: #d4edda; color: #155724; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;';
+            successDiv.innerHTML = `✅ ${result.message}`;
+            
+            const formContainer = document.querySelector('.attendance-form');
+            formContainer.parentNode.insertBefore(successDiv, formContainer);
+            formContainer.style.display = 'none';
+            
+            // Refresh page after 2 seconds to show updated status
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            // Show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'background: #f8d7da; color: #721c24; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;';
+            errorDiv.innerHTML = `❌ ${result.message}`;
+            
+            const form = document.getElementById('attendanceForm');
+            form.parentNode.insertBefore(errorDiv, form);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'background: #f8d7da; color: #721c24; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;';
+        errorDiv.innerHTML = '❌ An error occurred while submitting your attendance. Please try again.';
+        
+        const form = document.getElementById('attendanceForm');
+        form.parentNode.insertBefore(errorDiv, form);
+    } finally {
+        // Restore button state
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>

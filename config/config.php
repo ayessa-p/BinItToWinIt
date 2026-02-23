@@ -19,7 +19,21 @@ date_default_timezone_set('Asia/Manila');
 // Site configuration
 define('SITE_NAME', 'MTICS - Manila Technician Institute Computer Society');
 define('SITE_URL', 'http://localhost/BinItToWinIt');
-define('TOKENS_PER_BOTTLE', 5.00); // Eco-Tokens earned per recycled bottle
+define('TOKENS_PER_BOTTLE', 5.00); // Eco-Tokens earned per recycled bottle (legacy/other flows)
+
+/**
+ * Points earned for an accepted PET bottle based on weight (grams).
+ * Based on typical PET bottle weights: small 10–14g, medium 15–22g, large 23g+.
+ * Sensor accepts 10–25g; scale rewards heavier bottles (more plastic recycled).
+ */
+function tokens_for_bottle_weight_grams($weight_g) {
+    $w = (float) $weight_g;
+    if ($w < 10) return 0;
+    if ($w <= 13) return 1;   // very small / cap
+    if ($w <= 17) return 2;   // small PET (~250–500ml)
+    if ($w <= 22) return 3;   // medium PET (~500ml–1L)
+    return 4;                  // large PET (1L+), or 23–25g range
+}
 
 // Security
 define('SESSION_TIMEOUT', 3600); // 1 hour in seconds

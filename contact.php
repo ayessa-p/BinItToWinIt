@@ -51,16 +51,16 @@ include 'includes/header.php';
                             <h3 style="color: var(--light-blue); margin-bottom: 1rem;">Contact Information</h3>
                             <p style="color: var(--medium-gray); margin-bottom: 0.5rem;">
                                 <strong style="color: var(--white);">Email:</strong><br>
-                                info@mtics.edu.ph
+                                mticsofficial@gmail.com
                             </p>
                             <p style="color: var(--medium-gray); margin-bottom: 0.5rem;">
                                 <strong style="color: var(--white);">Phone:</strong><br>
-                                +63 XXX XXX XXXX
+                                +63 123 456 7890
                             </p>
                             <p style="color: var(--medium-gray); margin-bottom: 0.5rem;">
                                 <strong style="color: var(--white);">Address:</strong><br>
                                 Manila Technician Institute<br>
-                                Computer Science Department
+                                Computer Society
                             </p>
                         </div>
                         

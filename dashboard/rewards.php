@@ -124,7 +124,7 @@ include '../includes/header.php';
         <h1 class="section-title">Rewards Marketplace</h1>
         
         <!-- Balance Display -->
-        <div class="card" style="max-width: 500px; margin: 0 auto 3rem; text-align: center; background: linear-gradient(135deg, rgba(61, 127, 199, 0.3) 0%, rgba(22, 36, 71, 0.8) 100%); border: 2px solid var(--gold-yellow);">
+        <div class="card" style="max-width: 500px; margin: 0 auto 3rem; text-align: center; background: white; border: 2px solid var(--primary-blue); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
             <div class="card-body" style="padding: 2rem;">
                 <h2 style="color: var(--medium-gray); font-size: 1.1rem; margin-bottom: 1rem;">Your Available Balance</h2>
                 <div class="token-display" style="font-size: 2.5rem; justify-content: center;">
@@ -156,9 +156,9 @@ include '../includes/header.php';
                     </h2>
                 </div>
                 
-                <div class="grid grid-3" style="margin-bottom: 3rem;">
+                <div class="grid grid-3" style="margin-bottom: 3rem; align-items: stretch;">
                     <?php foreach ($category_rewards as $reward): ?>
-                        <div class="card" style="display: flex; flex-direction: column;">
+                        <div class="card" style="display: flex; flex-direction: column; height: 100%;">
                             <?php if ($reward['image_url']): ?>
                                 <img src="<?php echo htmlspecialchars($reward['image_url']); ?>" 
                                      alt="<?php echo htmlspecialchars($reward['name']); ?>"
@@ -169,7 +169,7 @@ include '../includes/header.php';
                                 <h3 class="card-title" style="font-size: 1.3rem;"><?php echo htmlspecialchars($reward['name']); ?></h3>
                             </div>
                             
-                            <div class="card-body" style="flex-grow: 1;">
+                            <div class="card-body" style="flex-grow: 1; display: flex; flex-direction: column;">
                                 <p style="color: var(--dark-gray); margin-bottom: 1rem;">
                                     <?php echo htmlspecialchars($reward['description']); ?>
                                 </p>
@@ -181,22 +181,22 @@ include '../includes/header.php';
                                 <?php endif; ?>
                                 
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--azure-blue);">
-                                    <div class="token-display" style="font-size: 1.3rem;">
+                                    <div class="token-display" style="font-size: 1.3rem; width: 45%;">
                                         <span class="token-icon"></span>
                                         <span><?php echo format_tokens($reward['token_cost']); ?></span>
                                     </div>
                                     
                                     <?php if ($user_balance >= $reward['token_cost'] && ($reward['stock_quantity'] == -1 || $reward['stock_quantity'] > 0)): ?>
-                                        <form method="POST" action="" style="display: inline;">
+                                        <form method="POST" action="" style="display: inline; width: 50%;">
                                             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                                             <input type="hidden" name="reward_id" value="<?php echo $reward['id']; ?>">
                                             <button type="submit" name="redeem" class="btn btn-primary" 
-                                                    onclick="return confirm('Redeem <?php echo htmlspecialchars($reward['name']); ?> for <?php echo format_tokens($reward['token_cost']); ?> tokens?');">
+                                                    onclick="return confirm('Redeem <?php echo htmlspecialchars($reward['name']); ?> for <?php echo format_tokens($reward['token_cost']); ?> tokens?');" style="width: 100%;">
                                                 Redeem
                                             </button>
                                         </form>
                                     <?php else: ?>
-                                        <button class="btn btn-secondary" disabled>
+                                        <button class="btn btn-secondary" disabled style="width: 80%; font-size: 0.8rem;">
                                             <?php 
                                             if ($user_balance < $reward['token_cost']) {
                                                 echo 'Insufficient Tokens';

@@ -84,6 +84,14 @@
                     <span class="sidebar-icon"><i class="fa-solid fa-gift"></i></span>
                     <span>Rewards</span>
                 </a>
+                <a href="<?php echo SITE_URL; ?>/admin/automation.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'automation.php') ? 'active' : ''; ?>">
+                    <span class="sidebar-icon"><i class="fa-solid fa-cogs"></i></span>
+                    <span>Services</span>
+                </a>
+                <a href="<?php echo SITE_URL; ?>/admin/sensor_monitor.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'sensor_monitor.php') ? 'active' : ''; ?>">
+                    <span class="sidebar-icon"><i class="fa-solid fa-microchip"></i></span>
+                    <span>Sensor Monitor</span>
+                </a>
                 <a href="<?php echo SITE_URL; ?>/admin/api_keys.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'api_keys.php') ? 'active' : ''; ?>">
                     <span class="sidebar-icon"><i class="fa-solid fa-key"></i></span>
                     <span>API Keys</span>

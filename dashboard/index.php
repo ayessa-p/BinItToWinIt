@@ -21,20 +21,20 @@ $stmt = $db->prepare("
 $stmt->execute([$user_id]);
 $recent_transactions = $stmt->fetchAll();
 
-// Get recent recycling activities
+// Get recent recycling activities (accepted and rejected)
 $stmt = $db->prepare("
     SELECT * FROM recycling_activities 
     WHERE user_id = ? 
     ORDER BY created_at DESC 
-    LIMIT 5
+    LIMIT 20
 ");
 $stmt->execute([$user_id]);
 $recent_activities = $stmt->fetchAll();
 
-// Get statistics
+// Get statistics (accepted only for "bottles recycled", all for token sum)
 $stmt = $db->prepare("
     SELECT 
-        COUNT(*) as total_recycled,
+        SUM(CASE WHEN tokens_earned > 0 THEN 1 ELSE 0 END) as total_recycled,
         SUM(tokens_earned) as total_tokens_earned
     FROM recycling_activities 
     WHERE user_id = ?
@@ -50,11 +50,10 @@ include '../includes/header.php';
         <h1 class="section-title">Welcome, <?php echo htmlspecialchars($user['full_name']); ?>!</h1>
         
         <!-- Token Balance Card -->
-        <div class="card" style="max-width: 600px; margin: 0 auto 3rem; text-align: center; background: linear-gradient(135deg, rgba(61, 127, 199, 0.3) 0%, rgba(22, 36, 71, 0.8) 100%); border: 2px solid var(--gold-yellow);">
+        <div class="card" style="max-width: 600px; margin: 0 auto 3rem; text-align: center; background: white; border: 2px solid #007bff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 123, 255, 0.1);">
             <div class="card-body" style="padding: 3rem 2rem;">
                 <h2 style="color: var(--medium-gray); font-size: 1.2rem; margin-bottom: 1rem;">Your Eco-Token Balance</h2>
                 <div class="token-display" style="font-size: 3rem; justify-content: center;">
-                    <span class="token-icon"></span>
                     <span><?php echo format_tokens($user['eco_tokens']); ?></span>
                 </div>
                 <p style="color: var(--medium-gray); margin-top: 1rem;">
@@ -66,7 +65,9 @@ include '../includes/header.php';
         <!-- Statistics Grid -->
         <div class="grid grid-3" style="margin-bottom: 3rem;">
             <div class="card" style="text-align: center;">
-                <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 1rem;">♻️</div>
+                <div style="font-size: 3rem; color: #007bff; margin-bottom: 1rem;">
+                    <i class="fas fa-recycle"></i>
+                </div>
                 <h3 style="color: var(--light-blue); margin-bottom: 0.5rem;">
                     <?php echo $stats['total_recycled'] ?? 0; ?>
                 </h3>
@@ -74,7 +75,9 @@ include '../includes/header.php';
             </div>
             
             <div class="card" style="text-align: center;">
-                <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 1rem;">💰</div>
+                <div style="font-size: 3rem; color: #007bff; margin-bottom: 1rem;">
+                    <i class="fas fa-coins"></i>
+                </div>
                 <h3 style="color: var(--light-blue); margin-bottom: 0.5rem;">
                     <?php echo format_tokens($stats['total_tokens_earned'] ?? 0); ?>
                 </h3>
@@ -82,7 +85,9 @@ include '../includes/header.php';
             </div>
             
             <div class="card" style="text-align: center;">
-                <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 1rem;">🎁</div>
+                <div style="font-size: 3rem; color: #007bff; margin-bottom: 1rem;">
+                    <i class="fas fa-gift"></i>
+                </div>
                 <h3 style="color: var(--light-blue); margin-bottom: 0.5rem;">
                     <a href="rewards.php" style="color: var(--light-blue); text-decoration: none;">
                         Browse Rewards
@@ -104,25 +109,38 @@ include '../includes/header.php';
                         <thead>
                             <tr style="border-bottom: 1px solid var(--azure-blue);">
                                 <th style="padding: 1rem; text-align: left; color: var(--light-blue);">Date</th>
-                                <th style="padding: 1rem; text-align: left; color: var(--light-blue);">Bottle Type</th>
-                                <th style="padding: 1rem; text-align: left; color: var(--light-blue);">Sensor ID</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--light-blue);">Status</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--light-blue);">Details</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--light-blue);">Device</th>
                                 <th style="padding: 1rem; text-align: right; color: var(--light-blue);">Tokens Earned</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($recent_activities as $activity): ?>
+                            <?php foreach ($recent_activities as $activity):
+                                $is_accepted = (float)($activity['tokens_earned'] ?? 0) > 0;
+                                $details = $activity['description'] ?? $activity['bottle_type'] ?? '';
+                                $device = $activity['device_id'] ?? $activity['sensor_id'] ?? '';
+                            ?>
                             <tr style="border-bottom: 1px solid rgba(61, 127, 199, 0.2);">
                                 <td style="padding: 1rem; color: var(--medium-gray);">
-                                    <?php echo date('M j, Y g:i A', strtotime($activity['created_at'])); ?>
+                                    <?php echo date('M j, Y g:i A', strtotime($activity['created_at'] ?? '')); ?>
+                                </td>
+                                <td style="padding: 1rem;">
+                                    <span style="
+                                        padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem;
+                                        <?php echo $is_accepted ? 'background: rgba(0, 255, 0, 0.2); color: #90ee90;' : 'background: rgba(255, 100, 100, 0.2); color: #ffb3b3;'; ?>
+                                    ">
+                                        <?php echo $is_accepted ? 'Accepted' : 'Rejected'; ?>
+                                    </span>
                                 </td>
                                 <td style="padding: 1rem; color: var(--medium-gray);">
-                                    <?php echo ucfirst(htmlspecialchars($activity['bottle_type'])); ?>
+                                    <?php echo htmlspecialchars($details ?: '—'); ?>
                                 </td>
                                 <td style="padding: 1rem; color: var(--medium-gray);">
-                                    <?php echo htmlspecialchars($activity['sensor_id']); ?>
+                                    <?php echo htmlspecialchars($device ?: '—'); ?>
                                 </td>
-                                <td style="padding: 1rem; text-align: right; color: var(--gold-yellow); font-weight: 600;">
-                                    +<?php echo format_tokens($activity['tokens_earned']); ?>
+                                <td style="padding: 1rem; text-align: right; font-weight: 600; color: <?php echo $is_accepted ? 'var(--gold-yellow);' : 'var(--medium-gray);'; ?>">
+                                    <?php echo $is_accepted ? '+' : ''; ?><?php echo format_tokens($activity['tokens_earned'] ?? 0); ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -165,9 +183,9 @@ include '../includes/header.php';
                                         if ($transaction['transaction_type'] === 'earned') {
                                             echo 'background: rgba(0, 255, 0, 0.2); color: #90ee90;';
                                         } elseif ($transaction['transaction_type'] === 'redeemed') {
-                                            echo 'background: rgba(255, 215, 0, 0.2); color: var(--bright-gold);';
+                                            echo 'color: #007bff;';
                                         } else {
-                                            echo 'background: rgba(61, 127, 199, 0.2); color: var(--light-blue);';
+                                            echo 'color: #007bff;';
                                         }
                                         ?>
                                     ">
@@ -178,7 +196,15 @@ include '../includes/header.php';
                                     <?php echo htmlspecialchars($transaction['description']); ?>
                                 </td>
                                 <td style="padding: 1rem; text-align: right; font-weight: 600; 
-                                    <?php echo $transaction['transaction_type'] === 'earned' ? 'color: #90ee90;' : 'color: var(--gold-yellow);'; ?>">
+                                    <?php 
+                                    if ($transaction['transaction_type'] === 'earned') {
+                                        echo 'color: #90ee90;';
+                                    } elseif ($transaction['transaction_type'] === 'redeemed') {
+                                        echo 'color: #007bff;';
+                                    } else {
+                                        echo 'color: #007bff;';
+                                    }
+                                    ?>">
                                     <?php echo $transaction['transaction_type'] === 'earned' ? '+' : '-'; ?>
                                     <?php echo format_tokens($transaction['amount']); ?>
                                 </td>
@@ -208,7 +234,12 @@ include '../includes/header.php';
         <!-- Quick Actions -->
         <div style="text-align: center; margin-top: 3rem;">
             <a href="rewards.php" class="btn btn-primary btn-large">Browse Rewards Marketplace</a>
-            <a href="transactions.php" class="btn btn-secondary btn-large" style="margin-left: 1rem;">View Full History</a>
+            <a href="pair_device.php" class="btn btn-secondary btn-large" style="margin-left: 1rem;">
+                <i class="fas fa-link"></i> Pair ESP32 Device
+            </a>
+            <a href="transactions.php" class="btn btn-secondary btn-large" style="margin-left: 1rem;">
+                <i class="fas fa-history"></i> View Full History
+            </a>
         </div>
     </div>
 </section>

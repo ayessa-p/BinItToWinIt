@@ -37,7 +37,9 @@ include 'includes/header.php';
                         <h3 style="color: var(--light-blue); margin-bottom: 1.5rem;">How It Works</h3>
                         <div class="grid grid-3">
                             <div style="text-align: center; padding: 1.5rem;">
-                                <div style="font-size: 4rem; margin-bottom: 1rem;">1️⃣</div>
+                                <div style="font-size: 4rem; color: #007bff; margin-bottom: 1rem;">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
                                 <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Register</h4>
                                 <p style="color: var(--medium-gray);">
                                     Create your account and get your student ID linked to the system
@@ -45,7 +47,9 @@ include 'includes/header.php';
                             </div>
                             
                             <div style="text-align: center; padding: 1.5rem;">
-                                <div style="font-size: 4rem; margin-bottom: 1rem;">2️⃣</div>
+                                <div style="font-size: 4rem; color: #007bff; margin-bottom: 1rem;">
+                                    <i class="fas fa-recycle"></i>
+                                </div>
                                 <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Recycle</h4>
                                 <p style="color: var(--medium-gray);">
                                     Deposit plastic bottles in our smart recycling bins equipped with sensors
@@ -53,7 +57,9 @@ include 'includes/header.php';
                             </div>
                             
                             <div style="text-align: center; padding: 1.5rem;">
-                                <div style="font-size: 4rem; margin-bottom: 1rem;">3️⃣</div>
+                                <div style="font-size: 4rem; color: #007bff; margin-bottom: 1rem;">
+                                    <i class="fas fa-coins"></i>
+                                </div>
                                 <h4 style="color: var(--light-blue); margin-bottom: 0.5rem;">Earn & Redeem</h4>
                                 <p style="color: var(--medium-gray);">
                                     Automatically receive Eco-Tokens and redeem them for exciting rewards
@@ -68,7 +74,7 @@ include 'includes/header.php';
                         <h3 style="color: var(--light-blue); margin-bottom: 1rem;">Eco-Token System</h3>
                         <div style="background: rgba(61, 127, 199, 0.1); padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
                             <p style="font-size: 1.1rem; margin-bottom: 1rem;">
-                                <strong style="color: var(--gold-yellow);">Each recycled bottle = <?php echo TOKENS_PER_BOTTLE; ?> Eco-Tokens</strong>
+                                <strong style="color: #007bff;">Each recycled bottle = <?php echo TOKENS_PER_BOTTLE; ?> Eco-Tokens</strong>
                             </p>
                             <p style="color: var(--medium-gray);">
                                 Tokens are automatically credited to your account when the sensor detects 
@@ -82,7 +88,7 @@ include 'includes/header.php';
                         <h3 style="color: var(--light-blue); margin-bottom: 1rem;">Available Rewards</h3>
                         <div class="grid grid-2">
                             <div style="background: rgba(61, 127, 199, 0.1); padding: 1.5rem; border-radius: var(--radius-md);">
-                                <h4 style="color: var(--gold-yellow); margin-bottom: 0.5rem;">Services</h4>
+                                <h4 style="color: #007bff; margin-bottom: 0.5rem;">Services</h4>
                                 <ul style="color: var(--medium-gray); list-style: none; padding-left: 0;">
                                     <li>• Printing Credits</li>
                                     <li>• Internet Access</li>
@@ -90,7 +96,7 @@ include 'includes/header.php';
                                 </ul>
                             </div>
                             <div style="background: rgba(61, 127, 199, 0.1); padding: 1.5rem; border-radius: var(--radius-md);">
-                                <h4 style="color: var(--gold-yellow); margin-bottom: 0.5rem;">Merchandise & Electronics</h4>
+                                <h4 style="color: #007bff; margin-bottom: 0.5rem;">Merchandise & Electronics</h4>
                                 <ul style="color: var(--medium-gray); list-style: none; padding-left: 0;">
                                     <li>• MTICS Merchandise</li>
                                     <li>• USB Drives</li>
@@ -116,7 +122,7 @@ include 'includes/header.php';
         <div class="circuit-divider"></div>
         
         <h2 class="section-title" style="margin-top: 4rem;">Other MTICS Projects</h2>
-        <div class="grid grid-2" style="margin-top: 3rem;">
+        <div class="grid grid-4" style="margin-top: 3rem;">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Tech Workshops</h3>

@@ -35,8 +35,8 @@
                 
                 <div class="footer-section">
                     <h4>Contact</h4>
-                    <p>Email: info@mtics.edu.ph</p>
-                    <p>Phone: +63 XXX XXX XXXX</p>
+                    <p>Email: mticsofficial@gmail.com</p>
+                    <p>Phone: +63 123 456 7890</p>
                 </div>
             </div>
             

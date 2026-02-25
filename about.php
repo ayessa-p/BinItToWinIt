@@ -46,97 +46,112 @@ include 'includes/header.php';
         </div>
         
         <h2 class="section-title" style="margin-top: 4rem;">MTICS Officers - Academic Year 2025-2026</h2>
-        <div style="max-width: 900px; margin: 3rem auto;">
+        <div style="max-width: 1000px; margin: 3rem auto;">
             <p style="text-align: center; color: var(--dark-gray); font-size: 1.1rem; margin-bottom: 2rem;">
-                Our dedicated team of officers works tirelessly to organize events, 
-                manage projects, and support our members. Meet the leaders driving 
-                MTICS forward!
+                Organizational chart of MTICS officers for the current academic year.
             </p>
-            <div class="grid grid-2" style="margin-bottom: 2rem;">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Executive Officers</h3>
+
+            <!-- Simple organizational chart -->
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 2rem;">
+                <!-- Level 1: President -->
+                <div style="display: flex; justify-content: center; width: 100%;">
+                    <div style="min-width: 260px; text-align: center; padding: 1rem 1.5rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid var(--azure-blue);">
+                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Chief Executive President</div>
+                        <div style="color: var(--dark-gray);">Jerome Steven Rosario</div>
                     </div>
-                    <div class="card-body">
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive President</h4>
-                            <p style="color: var(--dark-gray);">Jerome Steven Rosario</p>
+                </div>
+
+                <!-- Connector -->
+                <div style="width: 2px; height: 24px; background: var(--azure-blue);"></div>
+
+                <!-- Level 2: Vice Presidents -->
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; width: 100%;">
+                    <div style="min-width: 220px; max-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Chief Executive Vice President</div>
+                        <div style="color: var(--dark-gray);">Hanna Clerdee Cruz</div>
+                    </div>
+                    <div style="min-width: 220px; max-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEVP for Internal Affairs</div>
+                        <div style="color: var(--dark-gray);">Ianzae Ryan Ego</div>
+                    </div>
+                    <div style="min-width: 220px; max-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEVP for External Affairs</div>
+                        <div style="color: var(--dark-gray);">Sachzie Sofia Ilagan</div>
+                    </div>
+                </div>
+
+                <!-- Connector -->
+                <div style="width: 60%; max-width: 640px; border-top: 2px solid var(--azure-blue);"></div>
+
+                <!-- Level 3: Executive Officers -->
+                <div style="width: 100%;">
+                    <h3 style="text-align: center; margin-bottom: 1rem; color: var(--text-dark);">Executive Officers</h3>
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Documentation</div>
+                            <div style="color: var(--dark-gray);">Cristel Kate Famini</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Vice President</h4>
-                            <p style="color: var(--dark-gray);">Hanna Clerdee Cruz</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Finance</div>
+                            <div style="color: var(--dark-gray);">Kimberly Eledia</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Vice President For Internal Affairs</h4>
-                            <p style="color: var(--dark-gray);">Ianzae Ryan Ego</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Audit</div>
+                            <div style="color: var(--dark-gray);">Mary Pauline Calungsod</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Vice President For External Affairs</h4>
-                            <p style="color: var(--dark-gray);">Sachzie Sofia Ilagan</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Information</div>
+                            <div style="color: var(--dark-gray);">Lord Cedric Vila</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Documentation</h4>
-                            <p style="color: var(--dark-gray);">Cristel Kate Famini</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Activities & Programs</div>
+                            <div style="color: var(--dark-gray);">Kim Jensen Yebes</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Finance</h4>
-                            <p style="color: var(--dark-gray);">Kimberly Eledia</p>
-                        </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Audit</h4>
-                            <p style="color: var(--dark-gray);">Mary Pauline Calungsod</p>
-                        </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Information</h4>
-                            <p style="color: var(--dark-gray);">Lord Cedric Vila</p>
-                        </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Activities and Programs</h4>
-                            <p style="color: var(--dark-gray);">Kim Jensen Yebes</p>
-                        </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Chief Executive Officer For Logistics</h4>
-                            <p style="color: var(--dark-gray);">Krsmur Chelvin Lacorte</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Logistics</div>
+                            <div style="color: var(--dark-gray);">Krsmur Chelvin Lacorte</div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Assistant Officers</h3>
-                    </div>
-                    <div class="card-body">
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Vice President For Internal Affairs</h4>
-                            <p style="color: var(--dark-gray);">Ayessa Denisse Pili</p>
+
+                <!-- Connector -->
+                <div style="width: 60%; max-width: 640px; border-top: 2px dashed var(--azure-blue); margin-top: 0.5rem;"></div>
+
+                <!-- Level 4: Assistant Officers -->
+                <div style="width: 100%;">
+                    <h3 style="text-align: center; margin: 1.5rem 0 1rem; color: var(--text-dark);">Assistant Officers</h3>
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">AVP for Internal Affairs</div>
+                            <div style="color: var(--dark-gray);">Ayessa Denisse Pili</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Vice President For External Affairs</h4>
-                            <p style="color: var(--dark-gray);">Dion Ongaria</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">AVP for External Affairs</div>
+                            <div style="color: var(--dark-gray);">Dion Ongaria</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Documentation</h4>
-                            <p style="color: var(--dark-gray);">Lance Grant Haboc</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Documentation</div>
+                            <div style="color: var(--dark-gray);">Lance Grant Haboc</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Finance</h4>
-                            <p style="color: var(--dark-gray);">Elijah Neil Gallardo</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Finance</div>
+                            <div style="color: var(--dark-gray);">Elijah Neil Gallardo</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Audit</h4>
-                            <p style="color: var(--dark-gray);">Julia Faye Datang</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Audit</div>
+                            <div style="color: var(--dark-gray);">Julia Faye Datang</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Information</h4>
-                            <p style="color: var(--dark-gray);">Trisha Mia Morales</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Information</div>
+                            <div style="color: var(--dark-gray);">Trisha Mia Morales</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Activities and Programs</h4>
-                            <p style="color: var(--dark-gray);">John Regan Asino</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Activities & Programs</div>
+                            <div style="color: var(--dark-gray);">John Regan Asino</div>
                         </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <h4 style="color: var(--text-dark); font-weight: 600; margin-bottom: 0.5rem;">Assistant Executive Officer For Logistics</h4>
-                            <p style="color: var(--dark-gray);">Marcus Iñigo Aristain</p>
+                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Logistics</div>
+                            <div style="color: var(--dark-gray);">Marcus Iñigo Aristain</div>
                         </div>
                     </div>
                 </div>

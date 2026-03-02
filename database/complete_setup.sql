@@ -1,10 +1,6 @@
 -- =====================================================
 -- MTICS - Bin It to Win It
 -- Complete Database Setup
--- Manila Technician Institute Computer Society
--- =====================================================
--- This file contains everything needed to set up the database
--- Import this file into a fresh MySQL database
 -- =====================================================
 
 -- Create database
@@ -59,11 +55,13 @@ CREATE TABLE IF NOT EXISTS recycling_activities (
     bottle_type VARCHAR(50),
     tokens_earned DECIMAL(10, 2) NOT NULL,
     device_timestamp DATETIME,
+    device_id VARCHAR(50) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
     INDEX idx_created_at (created_at),
-    INDEX idx_sensor_id (sensor_id)
+    INDEX idx_sensor_id (sensor_id),
+    INDEX idx_device_id (device_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
@@ -149,6 +147,8 @@ CREATE TABLE IF NOT EXISTS events (
     location VARCHAR(255),
     image_url VARCHAR(500),
     is_published BOOLEAN DEFAULT FALSE,
+    participant_count INT DEFAULT 0,
+    attendance_enabled BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_event_date (event_date),
@@ -189,12 +189,6 @@ INSERT INTO news (title, content, author, is_published) VALUES
 ('Welcome to Bin It to Win It!', 'We are excited to launch our new recycling initiative that rewards students for their environmental efforts. Start recycling today and earn Eco-Tokens!', 'MTICS Admin', TRUE),
 ('MTICS Annual General Meeting', 'Join us for our annual general meeting on March 15th. We will discuss upcoming projects and initiatives for the semester.', 'MTICS Officers', TRUE);
 
--- =====================================================
--- DEFAULT ADMIN ACCOUNT
--- =====================================================
--- Username: mtics.official
--- Password: mticstuptaguig
--- =====================================================
 INSERT INTO users (student_id, email, password_hash, full_name, is_admin, is_active, eco_tokens)
 VALUES (
     'mtics.official',
@@ -212,7 +206,6 @@ ON DUPLICATE KEY UPDATE
 
 -- =====================================================
 -- RESOURCE, SERVICE, AND AUTOMATION TABLES
--- (from automation_tables.sql)
 -- =====================================================
 
 USE binittowinit;
@@ -432,7 +425,7 @@ FROM service_requests sr
 GROUP BY sr.service_type;
 
 -- =====================================================
--- SENSOR READINGS TABLE (from create_sensor_table.sql)
+-- SENSOR READINGS TABLE 
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS sensor_readings (
@@ -450,12 +443,8 @@ CREATE TABLE IF NOT EXISTS sensor_readings (
     INDEX idx_created (created_at)
 );
 
--- Add device_id to recycling_activities if not exists
-ALTER TABLE recycling_activities 
-ADD COLUMN IF NOT EXISTS device_id VARCHAR(50) DEFAULT NULL;
-
 -- =====================================================
--- EVENT ATTENDANCE TABLES (from event_attendance_tables.sql)
+-- EVENT ATTENDANCE TABLES 
 -- =====================================================
 
 USE binittowinit;
@@ -482,10 +471,6 @@ CREATE TABLE IF NOT EXISTS event_attendance (
     INDEX idx_submitted_at (submitted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Add attendance tracking to events table
-ALTER TABLE events ADD COLUMN IF NOT EXISTS participant_count INT DEFAULT 0;
-ALTER TABLE events ADD COLUMN IF NOT EXISTS attendance_enabled BOOLEAN DEFAULT TRUE;
-
 -- View for event statistics
 CREATE OR REPLACE VIEW event_statistics AS
 SELECT 
@@ -501,16 +486,7 @@ LEFT JOIN event_attendance ea ON e.id = ea.event_id
 GROUP BY e.id, e.title, e.event_date;
 
 -- =====================================================
--- SETUP COMPLETE
--- =====================================================
--- Database setup is complete!
--- 
 -- Default Admin Login:
 --   Student ID/Email: mtics.official
 --   Password: mticstuptaguig
---
--- Next Steps:
---   1. Configure database connection in config/database.php
---   2. Update SITE_URL in config/config.php if needed
---   3. Log in to admin panel at: /admin/index.php
 -- =====================================================

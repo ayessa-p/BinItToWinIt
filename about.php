@@ -28,20 +28,32 @@ include 'includes/header.php';
         <div class="grid grid-2" style="margin-bottom: 3rem;">
             <div class="card">
                 <h3 class="card-title" style="margin-bottom: var(--spacing-sm);">Our Mission</h3>
-                <p class="card-body" style="margin: 0;">To empower students with comprehensive technological knowledge, foster 
-                    a culture of innovation and collaboration, and promote environmental 
-                    consciousness through technology-driven solutions. We strive to create 
-                    opportunities for hands-on learning, professional development, and 
-                    community engagement.</p>
+                <p class="card-body" style="margin: 0;">The Manila Technician Institute Computer Society intends to
+                    protect the individual and holistic rights and interest of its 
+                    members, enhance electrical and technical skills in field of 
+                    computer literacy and information technology through the 
+                    development of holistic amity and leadership.
+                    Aims to implant among ourselves moral values and apt 
+                    conduct and cultivate mutual concern, and carting upon the
+                    member through the guidance and acceptance of our 
+                    predecessors in our respective technology, the Information 
+                    Technology and Computer Engineering Technology.
+                </p>
             </div>
             
             <div class="card">
                 <h3 class="card-title" style="margin-bottom: var(--spacing-sm);">Our Vision</h3>
-                <p class="card-body" style="margin: 0;">To be recognized as the premier student organization that seamlessly 
-                    integrates technological excellence with environmental responsibility. 
-                    We envision a future where our members are leaders in both the tech 
-                    industry and sustainable practices, creating innovative solutions that 
-                    benefit society and the planet.</p>
+                <p class="card-body" style="margin: 0;">The Manila Technician Institute Computer Society
+                    envisages to produce highly competitive and
+                    informative computer technicians, technically
+                    equipped and proficiently literate that can bequeath
+                    assistance, develop and uphold the furtherance of 
+                    Technological didactic progression of the country and 
+                    develop well skilled and morally literate leaders that 
+                    are capable of providing solutions and alternatively 
+                    response to tribulations and states of affairs in a 
+                    practical and tactical advance.
+                </p>
             </div>
         </div>
         

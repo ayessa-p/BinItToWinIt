@@ -1241,7 +1241,7 @@ include '../includes/admin_header.php';
                                                 <td><?php echo htmlspecialchars($stat['name']); ?></td>
                                                 <td><?php echo $stat['total_reservations']; ?></td>
                                                 <td><?php echo $stat['approved_reservations']; ?></td>
-                                                <td><?php echo number_format($stat['avg_duration_hours'], 1); ?> hrs</td>
+                                                <td><?php echo number_format((float)($stat['avg_duration_hours'] ?? 0), 1); ?> hrs</td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -1284,7 +1284,7 @@ include '../includes/admin_header.php';
                                                 <td><?php echo $stat['total_requests']; ?></td>
                                                 <td><?php echo $stat['completed_requests']; ?></td>
                                                 <td><?php echo $stat['pending_requests']; ?></td>
-                                                <td><?php echo number_format($stat['avg_completion_hours'], 1); ?> hrs</td>
+                                                <td><?php echo number_format((float)($stat['avg_completion_hours'] ?? 0), 1); ?> hrs</td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>

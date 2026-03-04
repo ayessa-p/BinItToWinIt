@@ -3,6 +3,18 @@ require_once 'config/config.php';
 
 $page_title = 'Projects';
 include 'includes/header.php';
+
+// Fetch projects for "Other MTICS Projects" (active and completed, exclude archived)
+$other_projects = [];
+try {
+    $db = Database::getInstance()->getConnection();
+    $stmt = $db->prepare("SELECT id, name, description, status, image_url, is_featured, created_at FROM projects WHERE status IN ('active', 'completed') ORDER BY is_featured DESC, created_at DESC");
+    $stmt->execute();
+    $other_projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Table may not exist yet
+    $other_projects = [];
+}
 ?>
 
 <section class="section">
@@ -123,46 +135,26 @@ include 'includes/header.php';
         
         <h2 class="section-title" style="margin-top: 4rem;">Other MTICS Projects</h2>
         <div class="grid grid-4" style="margin-top: 3rem;">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Tech Workshops</h3>
+            <?php if (empty($other_projects)): ?>
+                <p style="grid-column: 1 / -1; color: var(--medium-gray); text-align: center; padding: 2rem;">No other projects listed yet. Check back later!</p>
+            <?php else: ?>
+                <?php foreach ($other_projects as $proj): ?>
+                <div class="card">
+                    <div class="card-header">
+                        <?php if (!empty($proj['image_url'])): ?>
+                            <img src="<?php echo htmlspecialchars($proj['image_url']); ?>" alt="<?php echo htmlspecialchars($proj['name']); ?>" style="width: 100%; height: 160px; object-fit: cover; border-radius: var(--radius-md) var(--radius-md) 0 0; margin: -1rem -1rem 1rem -1rem;">
+                        <?php endif; ?>
+                        <h3 class="card-title"><?php echo htmlspecialchars($proj['name']); ?></h3>
+                        <?php if (!empty($proj['status'])): ?>
+                            <span class="badge badge-info" style="margin-top: 0.25rem;"><?php echo htmlspecialchars(ucfirst($proj['status'])); ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <p><?php echo nl2br(htmlspecialchars($proj['description'] ?? '')); ?></p>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p>Regular workshops covering programming, web development, cybersecurity, 
-                    and emerging technologies. Open to all students interested in expanding 
-                    their technical skills.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Hackathons & Competitions</h3>
-                </div>
-                <div class="card-body">
-                    <p>Organize and participate in coding competitions, hackathons, and 
-                    innovation challenges. Showcase your skills and win prizes!</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Community Outreach</h3>
-                </div>
-                <div class="card-body">
-                    <p>Technology education programs for local communities, teaching 
-                    digital literacy and computer skills to underserved populations.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Research & Development</h3>
-                </div>
-                <div class="card-body">
-                    <p>Collaborative research projects exploring innovative applications 
-                    of technology in education, sustainability, and social impact.</p>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 </section>

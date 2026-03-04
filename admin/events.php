@@ -367,15 +367,16 @@ include '../includes/admin_header.php';
                                         $stmt_att = $db->prepare("
                                             SELECT 
                                                 COUNT(*) as total,
-                                                COUNT(CASE WHEN attendance_status = 'approved' THEN 1 END) as approved
+                                                COUNT(CASE WHEN attendance_status = 'approved' THEN 1 END) as approved,
+                                                COUNT(CASE WHEN attendance_status = 'pending' THEN 1 END) as pending
                                             FROM event_attendance 
                                             WHERE event_id = ?
                                         ");
                                         $stmt_att->execute([$event['id']]);
                                         $att_stats = $stmt_att->fetch();
                                         echo "<span style='color: var(--primary-blue); font-weight: bold;'>" . $att_stats['approved'] . "</span>";
-                                        if ($att_stats['total'] > $att_stats['approved']) {
-                                            echo " <small style='color: orange;'>(" . ($att_stats['total'] - $att_stats['approved']) . " pending)</small>";
+                                        if ($att_stats['pending'] > 0) {
+                                            echo " <small style='color: orange;'>(" . $att_stats['pending'] . " pending)</small>";
                                         }
                                     ?>
                                 </td>

@@ -47,7 +47,22 @@
             </div>
             
             <nav class="admin-nav">
+                <?php
+                $admin_name = isset($_SESSION['full_name']) ? $_SESSION['full_name'] : 'Admin';
+                $admin_initial = strtoupper(substr($admin_name, 0, 1));
+                $admin_avatar = $_SESSION['profile_image'] ?? null;
+                ?>
                 <a href="<?php echo SITE_URL; ?>/index.php" class="admin-nav-link">View Site</a>
+                <a href="<?php echo SITE_URL; ?>/dashboard/profile.php" class="admin-nav-link" style="display:flex; align-items:center; gap:0.5rem;">
+                    <span style="font-size:0.9rem; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo htmlspecialchars($admin_name); ?></span>
+                    <span style="width:32px; height:32px; border-radius:999px; background:#e0e7ff; display:inline-flex; align-items:center; justify-content:center; overflow:hidden;">
+                        <?php if ($admin_avatar): ?>
+                            <img src="<?php echo htmlspecialchars($admin_avatar); ?>" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
+                        <?php else: ?>
+                            <span style="font-weight:600; color:#4f46e5;"><?php echo $admin_initial; ?></span>
+                        <?php endif; ?>
+                    </span>
+                </a>
                 <a href="<?php echo SITE_URL; ?>/auth/logout.php" class="admin-nav-link">Logout</a>
             </nav>
         </div>
@@ -84,6 +99,14 @@
                     <span class="sidebar-icon"><i class="fa-solid fa-gift"></i></span>
                     <span>Rewards</span>
                 </a>
+                <a href="<?php echo SITE_URL; ?>/admin/messages.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'messages.php') ? 'active' : ''; ?>">
+                    <span class="sidebar-icon"><i class="fa-solid fa-envelope"></i></span>
+                    <span>Messages</span>
+                </a>
+                <a href="<?php echo SITE_URL; ?>/admin/org_chart.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'org_chart.php') ? 'active' : ''; ?>">
+                    <span class="sidebar-icon"><i class="fa-solid fa-sitemap"></i></span>
+                    <span>Org Chart</span>
+                </a>
                 <a href="<?php echo SITE_URL; ?>/admin/automation.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'automation.php') ? 'active' : ''; ?>">
                     <span class="sidebar-icon"><i class="fa-solid fa-cogs"></i></span>
                     <span>Services</span>
@@ -99,6 +122,10 @@
                 <a href="<?php echo SITE_URL; ?>/admin/redemptions.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'redemptions.php') ? 'active' : ''; ?>">
                     <span class="sidebar-icon"><i class="fa-solid fa-circle-check"></i></span>
                     <span>Redemptions</span>
+                </a>
+                <a href="<?php echo SITE_URL; ?>/admin/reports.php" class="sidebar-link <?php echo (basename($_SERVER['PHP_SELF']) == 'reports.php') ? 'active' : ''; ?>">
+                    <span class="sidebar-icon"><i class="fa-solid fa-chart-bar"></i></span>
+                    <span>Reports</span>
                 </a>
             </nav>
         </aside>

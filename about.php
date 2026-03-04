@@ -2,6 +2,20 @@
 require_once 'config/config.php';
 
 $page_title = 'About Us';
+
+// Get officers from database
+$db = Database::getInstance()->getConnection();
+$stmt = $db->query("SELECT * FROM org_officers WHERE is_active = 1 ORDER BY display_order ASC");
+$officers = $stmt->fetchAll();
+
+// Group officers by position level for better organization
+$president = array_filter($officers, fn($o) => str_contains($o['position'], 'Chief Executive President'));
+$chief_vp = array_filter($officers, fn($o) => str_contains($o['position'], 'Chief Executive Vice President'));
+$other_vps = array_filter($officers, fn($o) => (str_contains($o['position'], 'Chief Executive VP') || str_contains($o['position'], 'CEVP')) && !str_contains($o['position'], 'Chief Executive Vice President'));
+$executive_officers = array_filter($officers, fn($o) => (str_contains($o['position'], 'CEO') || str_contains($o['position'], 'Executive Officer')) && !str_contains($o['position'], 'Asst.'));
+$assistant_officers = array_filter($officers, fn($o) => str_contains($o['position'], 'AVP') || str_contains($o['position'], 'Asst.'));
+$adviser = array_filter($officers, fn($o) => str_contains(strtolower($o['position']), 'adviser'));
+
 include 'includes/header.php';
 ?>
 
@@ -63,111 +77,143 @@ include 'includes/header.php';
                 Organizational chart of MTICS officers for the current academic year.
             </p>
 
-            <!-- Simple organizational chart -->
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 2rem;">
-                <!-- Level 1: President -->
-                <div style="display: flex; justify-content: center; width: 100%;">
-                    <div style="min-width: 260px; text-align: center; padding: 1rem 1.5rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid var(--azure-blue);">
-                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Chief Executive President</div>
-                        <div style="color: var(--dark-gray);">Jerome Steven Rosario</div>
-                    </div>
+            <?php if (!empty($officers)): ?>
+                <!-- Dynamic organizational chart -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 2rem;">
+                    <!-- Adviser -->
+                    <?php if (!empty($adviser) || true): ?>
+                        <div style="display:flex; justify-content:center; width:100%;">
+                            <?php if (!empty($adviser)): ?>
+                                <?php foreach ($adviser as $officer): ?>
+                                    <div style="min-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid var(--azure-blue);">
+                                        <?php if ($officer['profile_image']): ?>
+                                            <img src="<?php echo htmlspecialchars($officer['profile_image']); ?>" 
+                                                 alt="<?php echo htmlspecialchars($officer['full_name']); ?>"
+                                                 style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                                        <?php endif; ?>
+                                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;"><?php echo htmlspecialchars($officer['position']); ?></div>
+                                        <div style="color: var(--dark-gray);"><?php echo htmlspecialchars($officer['full_name']); ?></div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div style="min-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid var(--azure-blue);">
+                                    <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">MTICS Adviser</div>
+                                    <div style="color: var(--dark-gray);">Prof. Pops V. Madriaga</div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div style="width: 2px; height: 24px; background: var(--azure-blue);"></div>
+                    <?php endif; ?>
+                    <!-- Level 1: President -->
+                    <?php if (!empty($president)): ?>
+                        <div style="display: flex; justify-content: center; width: 100%;">
+                            <?php foreach ($president as $officer): ?>
+                                <div style="min-width: 260px; text-align: center; padding: 1rem 1.5rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid var(--azure-blue);">
+                                    <?php if ($officer['profile_image']): ?>
+                                        <img src="<?php echo htmlspecialchars($officer['profile_image']); ?>" 
+                                             alt="<?php echo htmlspecialchars($officer['full_name']); ?>"
+                                             style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                                    <?php endif; ?>
+                                    <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;"><?php echo htmlspecialchars($officer['position']); ?></div>
+                                    <div style="color: var(--dark-gray);"><?php echo htmlspecialchars($officer['full_name']); ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
+                        <!-- Connector -->
+                        <div style="width: 2px; height: 24px; background: var(--azure-blue);"></div>
+                    <?php endif; ?>
+
+                    <!-- Level 2: Chief Executive Vice President -->
+                    <?php if (!empty($chief_vp)): ?>
+                        <div style="display: flex; justify-content: center; width: 100%;">
+                            <?php foreach ($chief_vp as $officer): ?>
+                                <div style="min-width: 260px; text-align: center; padding: 1rem 1.5rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid var(--azure-blue);">
+                                    <?php if ($officer['profile_image']): ?>
+                                        <img src="<?php echo htmlspecialchars($officer['profile_image']); ?>" 
+                                             alt="<?php echo htmlspecialchars($officer['full_name']); ?>"
+                                             style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                                    <?php endif; ?>
+                                    <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;"><?php echo htmlspecialchars($officer['position']); ?></div>
+                                    <div style="color: var(--dark-gray);"><?php echo htmlspecialchars($officer['full_name']); ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
+                        <!-- Connector -->
+                        <div style="width: 2px; height: 24px; background: var(--azure-blue);"></div>
+                    <?php endif; ?>
+
+                    <!-- Level 3: Other Vice Presidents -->
+                    <?php if (!empty($other_vps)): ?>
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; width: 100%;">
+                            <?php foreach ($other_vps as $officer): ?>
+                                <div style="min-width: 220px; max-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                                    <?php if ($officer['profile_image']): ?>
+                                        <img src="<?php echo htmlspecialchars($officer['profile_image']); ?>" 
+                                             alt="<?php echo htmlspecialchars($officer['full_name']); ?>"
+                                             style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                                    <?php endif; ?>
+                                    <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;"><?php echo htmlspecialchars($officer['position']); ?></div>
+                                    <div style="color: var(--dark-gray);"><?php echo htmlspecialchars($officer['full_name']); ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
+                        <!-- Connector -->
+                        <div style="width: 60%; max-width: 640px; border-top: 2px solid var(--azure-blue);"></div>
+                    <?php endif; ?>
+
+                    <!-- Level 3: Executive Officers -->
+                    <?php if (!empty($executive_officers)): ?>
+                        <div style="width: 100%;">
+                            <h3 style="text-align: center; margin-bottom: 1rem; color: var(--text-dark);">Executive Officers</h3>
+                            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                                <?php foreach ($executive_officers as $officer): ?>
+                                    <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                                        <?php if ($officer['profile_image']): ?>
+                                            <img src="<?php echo htmlspecialchars($officer['profile_image']); ?>" 
+                                                 alt="<?php echo htmlspecialchars($officer['full_name']); ?>"
+                                                 style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                                        <?php endif; ?>
+                                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;"><?php echo htmlspecialchars($officer['position']); ?></div>
+                                        <div style="color: var(--dark-gray);"><?php echo htmlspecialchars($officer['full_name']); ?></div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        
+                        <!-- Connector -->
+                        <div style="width: 60%; max-width: 640px; border-top: 2px dashed var(--azure-blue); margin-top: 0.5rem;"></div>
+                    <?php endif; ?>
+
+                    <!-- Level 4: Assistant Officers -->
+                    <?php if (!empty($assistant_officers)): ?>
+                        <div style="width: 100%;">
+                            <h3 style="text-align: center; margin: 1.5rem 0 1rem; color: var(--text-dark);">Assistant Officers</h3>
+                            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                                <?php foreach ($assistant_officers as $officer): ?>
+                                    <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
+                                        <?php if ($officer['profile_image']): ?>
+                                            <img src="<?php echo htmlspecialchars($officer['profile_image']); ?>" 
+                                                 alt="<?php echo htmlspecialchars($officer['full_name']); ?>"
+                                                 style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                                        <?php endif; ?>
+                                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;"><?php echo htmlspecialchars($officer['position']); ?></div>
+                                        <div style="color: var(--dark-gray);"><?php echo htmlspecialchars($officer['full_name']); ?></div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
-
-                <!-- Connector -->
-                <div style="width: 2px; height: 24px; background: var(--azure-blue);"></div>
-
-                <!-- Level 2: Vice Presidents -->
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; width: 100%;">
-                    <div style="min-width: 220px; max-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Chief Executive Vice President</div>
-                        <div style="color: var(--dark-gray);">Hanna Clerdee Cruz</div>
-                    </div>
-                    <div style="min-width: 220px; max-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEVP for Internal Affairs</div>
-                        <div style="color: var(--dark-gray);">Ianzae Ryan Ego</div>
-                    </div>
-                    <div style="min-width: 220px; max-width: 260px; text-align: center; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEVP for External Affairs</div>
-                        <div style="color: var(--dark-gray);">Sachzie Sofia Ilagan</div>
-                    </div>
+            <?php else: ?>
+                <div style="text-align: center; padding: 3rem; color: var(--medium-gray);">
+                    <i class="fa-solid fa-users" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>No officers currently listed. Please check back later.</p>
                 </div>
-
-                <!-- Connector -->
-                <div style="width: 60%; max-width: 640px; border-top: 2px solid var(--azure-blue);"></div>
-
-                <!-- Level 3: Executive Officers -->
-                <div style="width: 100%;">
-                    <h3 style="text-align: center; margin-bottom: 1rem; color: var(--text-dark);">Executive Officers</h3>
-                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Documentation</div>
-                            <div style="color: var(--dark-gray);">Cristel Kate Famini</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Finance</div>
-                            <div style="color: var(--dark-gray);">Kimberly Eledia</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Audit</div>
-                            <div style="color: var(--dark-gray);">Mary Pauline Calungsod</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Information</div>
-                            <div style="color: var(--dark-gray);">Lord Cedric Vila</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Activities & Programs</div>
-                            <div style="color: var(--dark-gray);">Kim Jensen Yebes</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">CEO for Logistics</div>
-                            <div style="color: var(--dark-gray);">Krsmur Chelvin Lacorte</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Connector -->
-                <div style="width: 60%; max-width: 640px; border-top: 2px dashed var(--azure-blue); margin-top: 0.5rem;"></div>
-
-                <!-- Level 4: Assistant Officers -->
-                <div style="width: 100%;">
-                    <h3 style="text-align: center; margin: 1.5rem 0 1rem; color: var(--text-dark);">Assistant Officers</h3>
-                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">AVP for Internal Affairs</div>
-                            <div style="color: var(--dark-gray);">Ayessa Denisse Pili</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">AVP for External Affairs</div>
-                            <div style="color: var(--dark-gray);">Dion Ongaria</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Documentation</div>
-                            <div style="color: var(--dark-gray);">Lance Grant Haboc</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Finance</div>
-                            <div style="color: var(--dark-gray);">Elijah Neil Gallardo</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Audit</div>
-                            <div style="color: var(--dark-gray);">Julia Faye Datang</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Information</div>
-                            <div style="color: var(--dark-gray);">Trisha Mia Morales</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Activities & Programs</div>
-                            <div style="color: var(--dark-gray);">John Regan Asino</div>
-                        </div>
-                        <div style="flex: 1 1 220px; max-width: 260px; padding: 0.75rem 1rem; border-radius: 8px; background: #f9fafb;">
-                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Asst. EO for Logistics</div>
-                            <div style="color: var(--dark-gray);">Marcus Iñigo Aristain</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <?php endif; ?>
+        </div>
         
         <div style="text-align: center; margin-top: 3rem;">
             <a href="contact.php" class="btn btn-primary btn-large">Contact Us</a>

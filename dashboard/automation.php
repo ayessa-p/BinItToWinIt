@@ -11,7 +11,40 @@ $message = '';
 $message_type = '';
 
 // Fixed IT building rooms
-$rooms = ['RM101', 'RM102', 'RM103', 'RM201', 'RM202', 'RM203', 'RM301', 'RM302'];
+// Rooms list (prefer DB resources with category 'room', fallback to defaults)
+$rooms = [];
+try {
+    $stmt = $db->prepare("SELECT name FROM resources WHERE category = 'facility' AND type = 'room' AND is_active = 1 ORDER BY name ASC");
+    $stmt->execute();
+    $rooms = array_map(fn($r) => $r['name'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+} catch (PDOException $e) {
+    $rooms = [];
+}
+if (empty($rooms)) {
+    $rooms = ['RM101', 'RM102', 'RM103', 'RM201', 'RM202', 'RM203', 'RM301', 'RM302'];
+}
+
+// Fetch active borrowable equipment from resources (same list as admin Equipment Management)
+$equipment_list = [];
+try {
+    $stmt = $db->prepare("SELECT id, name FROM resources WHERE category = 'equipment' AND is_active = 1 ORDER BY name ASC");
+    $stmt->execute();
+    $equipment_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $equipment_list = [];
+}
+
+// Ensure common borrowables show up even if DB is missing seeds
+$default_equipment_names = [
+    'Projector','HDMI Cable','VGA Cable','Power Extension Cord',
+    'Audio Speaker','Microphone','Whiteboard','Marker Set','Stapler'
+];
+$existing_names_lc = array_map(fn($r) => strtolower($r['name'] ?? ''), $equipment_list);
+foreach ($default_equipment_names as $name) {
+    if (!in_array(strtolower($name), $existing_names_lc, true)) {
+        $equipment_list[] = ['id' => 0, 'name' => $name];
+    }
+}
 
 // Handle room reservation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reserve_room'])) {
@@ -102,18 +135,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_service'])) {
             $title = 'Printing';
         }
         
-        // Handle file upload for printing
+        // Handle file upload for printing (PDF only) and auto-detect pages
+        $detected_pages = null;
         if ($service_type === 'printing' && isset($_FILES['print_file']) && $_FILES['print_file']['error'] === UPLOAD_ERR_OK) {
             $upload_dir = __DIR__ . '/../uploads/printing/';
             if (!is_dir($upload_dir)) {
                 mkdir($upload_dir, 0755, true);
             }
             
-            $file_name = 'print_' . $user_id . '_' . time() . '_' . basename($_FILES['print_file']['name']);
-            $file_path = $upload_dir . $file_name;
-            
-            if (move_uploaded_file($_FILES['print_file']['tmp_name'], $file_path)) {
-                $file_path = '/uploads/printing/' . $file_name;
+            $original_name = $_FILES['print_file']['name'] ?? '';
+            $ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+            if ($ext !== 'pdf') {
+                $message = 'Only PDF files are allowed for printing.';
+                $message_type = 'error';
+            } else {
+                $file_name = 'print_' . $user_id . '_' . time() . '_' . basename($original_name);
+                $target_path = $upload_dir . $file_name;
+                
+                if (move_uploaded_file($_FILES['print_file']['tmp_name'], $target_path)) {
+                    $file_path = '/uploads/printing/' . $file_name;
+                    
+                    // Auto-count PDF pages by scanning for /Type /Page markers
+                    $contents = @file_get_contents($target_path);
+                    if ($contents !== false) {
+                        if (preg_match_all('/\/Type\s*\/Page[^s]/', $contents, $matches)) {
+                            $page_count = count($matches[0]);
+                            if ($page_count > 0) {
+                                $detected_pages = $page_count;
+                            }
+                        }
+                    }
+                } else {
+                    $message = 'Failed to upload PDF file.';
+                    $message_type = 'error';
+                }
             }
         }
         
@@ -147,7 +202,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_service'])) {
                 
                 // Use standard pricing
                 if ($service_type === 'printing') {
-                    $pages = max(1, (int)($_POST['pages'] ?? 1));
+                    // Prefer auto-detected page count for PDFs; default to 1 if unknown
+                    $pages = max(1, (int)($detected_pages ?? 1));
                     $color = sanitize_input($_POST['color'] ?? 'bw');
                     if (!in_array($color, ['bw', 'color'], true)) {
                         $color = 'bw';
@@ -290,22 +346,28 @@ include '../includes/header.php';
                         <input type="hidden" name="title" value="Printing">
                         
                         <div class="form-group">
-                            <label>Pages to Print:</label>
-                            <input type="number" name="pages" min="1" max="50" value="1" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Color:</label>
-                            <select name="color" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="bw">Black & White (1 token/page)</option>
-                                <option value="color">Color (5 tokens/page)</option>
+                            <label>Color / Printing Type:</label>
+                            <select name="color" id="print_color" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                                <?php foreach ($printing_services as $service): ?>
+                                    <option value="<?php echo htmlspecialchars($service['color_options']); ?>" data-ppp="<?php echo (float)$service['price_per_page']; ?>">
+                                        <?php echo htmlspecialchars($service['name']); ?>
+                                        (<?php echo format_tokens((float)$service['price_per_page']); ?> tokens/page)
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         
                         <div class="form-group">
-                            <label>Upload File to Print:</label>
-                            <input type="file" name="print_file" accept=".pdf,.doc,.docx,.txt" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                            <small style="color: var(--medium-gray);">Supported formats: PDF, DOC, DOCX, TXT</small>
+                            <label>Upload File to Print (PDF only):</label>
+                            <input type="file" name="print_file" id="print_file" accept=".pdf" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <small style="color: var(--medium-gray);">Only PDF files are allowed for printing.</small>
+                        </div>
+                        
+                        <div id="print_estimate" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:.75rem;display:none;">
+                            <div style="font-size:.9rem;color:#374151;">
+                                Estimated pages: <strong id="est_pages">-</strong> • Estimated tokens: <strong id="est_tokens">-</strong>
+                            </div>
+                            <small style="color:#6b7280;">Estimate updates after selecting a PDF and choosing type.</small>
                         </div>
                         
                         <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; border: none; border-radius: 4px; background: #007bff; color: white; cursor: pointer; font-weight: 500;">Request Printing Service</button>
@@ -327,14 +389,9 @@ include '../includes/header.php';
                             <label>Equipment Type:</label>
                             <select name="title" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                                 <option value="">Select Equipment...</option>
-                                <option value="Projector">Projector</option>
-                                <option value="HDMI Cable">HDMI Cable</option>
-                                <option value="VGA Cable">VGA Cable</option>
-                                <option value="Power Extension">Power Extension Cord</option>
-                                <option value="Audio Speaker">Audio Speaker</option>
-                                <option value="Microphone">Microphone</option>
-                                <option value="Whiteboard">Whiteboard</option>
-                                <option value="Marker Set">Marker Set</option>
+                                <?php foreach ($equipment_list as $eq): ?>
+                                    <option value="<?php echo htmlspecialchars($eq['name']); ?>"><?php echo htmlspecialchars($eq['name']); ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         
@@ -358,6 +415,57 @@ include '../includes/header.php';
                 </div>
             </div>
         </div>
+        
+        <script>
+        (function(){
+            const fileInput = document.getElementById('print_file');
+            const colorSel = document.getElementById('print_color');
+            const estWrap = document.getElementById('print_estimate');
+            const estPages = document.getElementById('est_pages');
+            const estTokens = document.getElementById('est_tokens');
+            
+            let detectedPages = null;
+            function getPricePerPage() {
+                const opt = colorSel.options[colorSel.selectedIndex];
+                return parseFloat(opt?.dataset?.ppp || '0');
+            }
+            function updateEstimate() {
+                if (!detectedPages) return;
+                const ppp = getPricePerPage();
+                if (!ppp) return;
+                const tokens = (ppp * detectedPages);
+                estPages.textContent = detectedPages;
+                estTokens.textContent = tokens.toFixed(2);
+                estWrap.style.display = 'block';
+            }
+            function detectPdfPages(file) {
+                detectedPages = null;
+                estWrap.style.display = 'none';
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function() {
+                    try {
+                        const text = new TextDecoder('utf-8').decode(reader.result);
+                        const match = text.match(/\/Type\s*\/Page[^s]/g);
+                        const count = match ? match.length : 1;
+                        detectedPages = Math.max(1, count);
+                        updateEstimate();
+                    } catch (e) {
+                        // Fallback minimal
+                        detectedPages = 1;
+                        updateEstimate();
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+            if (fileInput) {
+                fileInput.addEventListener('change', (e) => detectPdfPages(e.target.files?.[0]));
+            }
+            if (colorSel) {
+                colorSel.addEventListener('change', updateEstimate);
+            }
+        })();
+        </script>
         
         <!-- Room Reservation -->
         <div id="quick-room" class="admin-section">

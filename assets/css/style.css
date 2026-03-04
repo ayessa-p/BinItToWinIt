@@ -74,15 +74,28 @@ body {
     padding: var(--spacing-sm) 0;
 }
 
+/* Make header span full width and anchor content to corners */
+.main-header > .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: var(--spacing-md) !important;
+    padding-right: var(--spacing-md) !important;
+}
+
 .header-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    position: relative;
 }
 
 .logo-section {
     display: flex;
     align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+    align-self: flex-start;
 }
 
 .logo-link {
@@ -92,7 +105,7 @@ body {
 }
 
 .logo-img {
-    height: 50px;
+    height: 42px;
     width: auto;
     object-fit: contain;
 }
@@ -100,7 +113,7 @@ body {
 .logo-container {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 0.6rem;
 }
 
 .logo-text {
@@ -110,32 +123,37 @@ body {
 }
 
 .logo-main-text {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: var(--text-dark);
     line-height: 1;
 }
 
 .logo-sub-text {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--medium-gray);
-    line-height: 1.2;
-    max-width: 200px;
+    display: none;
 }
 
 /* Navigation */
 .main-nav {
     display: flex;
+    flex: 1 1 0;
+    justify-content: flex-start;
+    align-self: flex-start;
 }
 
 .nav-list {
     display: flex;
     list-style: none;
-    gap: var(--spacing-sm);
+    gap: 0.75rem;
     align-items: center;
     margin: 0;
     padding: 0;
+}
+
+/* Account dropdown pinned to top-right */
+.main-header .user-dropdown {
+    margin-left: auto !important;
+    align-self: flex-start !important;
 }
 
 .nav-link {
@@ -164,6 +182,76 @@ body {
     color: var(--white);
 }
 
+/* Show full organization name under MTICS on desktop (stacked vertically) */
+@media (min-width: 1024px) {
+    .logo-text { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 0.15rem; 
+    }
+    .logo-main-text {
+        font-size: 1.3rem;
+    }
+    .logo-main-text::after { content: none; }
+    .logo-sub-text {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: var(--medium-gray);
+        line-height: 1.2;
+        max-width: 100%;
+        width: 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        letter-spacing: 0.02em;
+    }
+}
+
+/* On very wide screens show the full name without truncation */
+@media (min-width: 1360px) {
+    .logo-sub-text {
+        max-width: 480px;
+    }
+}
+
+/* Desktop header layout: logo left, menus beside (aligned with) account on the right (single row) */
+@media (min-width: 1024px) {
+    .header-content { 
+        position: relative; 
+        display: grid; 
+        grid-template-columns: auto 1fr auto; 
+        grid-template-rows: auto; 
+        align-items: center;
+        gap: 0.5rem 1rem;
+    }
+    .logo-section { 
+        grid-column: 1 / 2; 
+        grid-row: 1 / 2; 
+        align-self: center; 
+    }
+    .main-header .user-dropdown { 
+        grid-column: 3 / 4; 
+        grid-row: 1 / 2; 
+        justify-self: end; 
+        align-self: center; 
+        margin-left: 0 !important;
+    }
+    .main-nav {
+        grid-column: 2 / 3; 
+        grid-row: 1 / 2; 
+        position: static; 
+        transform: none; 
+        flex: 0 0 auto; 
+        justify-content: flex-end;
+        align-self: center;
+        margin-top: 0;
+    }
+    .nav-list { 
+        justify-content: flex-end; 
+        gap: 1.25rem; 
+    }
+}
 /* Mobile Menu Toggle */
 .mobile-menu-toggle {
     display: none;

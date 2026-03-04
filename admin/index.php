@@ -71,16 +71,8 @@ try {
     error_log("Service requests query error: " . $e->getMessage());
 }
 
-// Recent activities
-$stmt = $db->prepare("
-    SELECT ra.*, u.full_name, u.student_id 
-    FROM recycling_activities ra 
-    JOIN users u ON ra.user_id = u.id 
-    ORDER BY ra.created_at DESC 
-    LIMIT 10
-");
-$stmt->execute();
-$recent_activities = $stmt->fetchAll();
+// Removed Top Recyclers from dashboard; moved to Reports
+$top_recyclers = [];
 
 include '../includes/admin_header.php';
 ?>
@@ -165,10 +157,16 @@ include '../includes/admin_header.php';
                     <p>Edit rewards and update stock quantities</p>
                 </a>
                 
+                <a href="equipment.php" class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-laptop"></i></div>
+                    <h3>Equipment</h3>
+                    <p>Manage equipment inventory and borrowing</p>
+                </a>
+                
                 <a href="automation.php" class="action-card">
                     <div class="action-icon"><i class="fa-solid fa-cogs"></i></div>
                     <h3>Services</h3>
-                    <p>Manage printing, internet & equipment requests</p>
+                    <p>Manage printing, internet & room requests</p>
                 </a>
                 
                 <a href="events.php" class="action-card">
@@ -218,39 +216,16 @@ include '../includes/admin_header.php';
                     <h3>API Keys</h3>
                     <p>Manage ESP32 API keys</p>
                 </a>
+                
+                <a href="reports.php" class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-file-lines"></i></div>
+                    <h3>Reports</h3>
+                    <p>Generate system reports</p>
+                </a>
             </div>
         </div>
         
-        <!-- Recent Activities -->
-        <?php if (!empty($recent_activities)): ?>
-        <div class="admin-section">
-            <h2 class="admin-section-title">Recent Recycling Activities</h2>
-            <div class="admin-table-container">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Student</th>
-                            <th>Bottle Type</th>
-                            <th>Sensor ID</th>
-                            <th>Tokens Earned</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_activities as $activity): ?>
-                        <tr>
-                            <td><?php echo date('M j, Y g:i A', strtotime($activity['created_at'])); ?></td>
-                            <td><?php echo htmlspecialchars($activity['full_name']); ?> (<?php echo htmlspecialchars($activity['student_id']); ?>)</td>
-                            <td><?php echo ucfirst(htmlspecialchars($activity['bottle_type'])); ?></td>
-                            <td><?php echo htmlspecialchars($activity['sensor_id']); ?></td>
-                            <td><?php echo format_tokens($activity['tokens_earned']); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <?php endif; ?>
+        <!-- Top Recyclers moved to Reports -->
     </div>
 </div>
 

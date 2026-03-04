@@ -47,12 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adjust_tokens'])) {
                 $stmt = $db->prepare("UPDATE users SET eco_tokens = ? WHERE id = ?");
                 $stmt->execute([$new_balance, $user_id]);
                 
-                // Record transaction
+                // Record transaction with proper sign
                 $stmt = $db->prepare("
                     INSERT INTO transactions (user_id, transaction_type, amount, description) 
                     VALUES (?, 'admin_adjustment', ?, ?)
                 ");
-                $stmt->execute([$user_id, abs($adjustment), $description]);
+                $stmt->execute([$user_id, $adjustment, $description]);
                 
                 $db->commit();
                 $message = "Successfully " . ($type === 'add' ? 'added' : 'deducted') . " " . format_tokens($amount) . " tokens. New balance: " . format_tokens($new_balance);

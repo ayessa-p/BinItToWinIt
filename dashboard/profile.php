@@ -11,6 +11,12 @@ $db = Database::getInstance()->getConnection();
 $message = '';
 $message_type = '';
 
+// Check for successful update redirect
+if (isset($_GET['updated']) && $_GET['updated'] == '1') {
+    $message = 'Profile updated successfully!';
+    $message_type = 'success';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $message = 'Invalid security token. Please try again.';
@@ -35,11 +41,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
                 $message = 'Email address is already in use by another account.';
                 $message_type = 'error';
             } else {
-                $stmt = $db->prepare("UPDATE users SET full_name = ?, email = ?, course = ?, year_level = ? WHERE id = ?");
-                if ($stmt->execute([$full_name, $email, $course, $year_level, $user_id])) {
+                // Handle profile image upload (optional)
+                $profile_image_path = null;
+                error_log("FILES array: " . print_r($_FILES, true));
+                
+                if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+                    $avatar_dir = __DIR__ . '/../uploads/avatars/';
+                    if (!is_dir($avatar_dir)) {
+                        mkdir($avatar_dir, 0755, true);
+                    }
+                    $ext = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
+                    $allowed_ext = ['jpg', 'jpeg', 'png'];
+                    if (in_array($ext, $allowed_ext, true)) {
+                        $safe_name = 'avatar_' . $user_id . '_' . time() . '.' . $ext;
+                        $target_path = $avatar_dir . $safe_name;
+                        $web_path = SITE_URL . '/uploads/avatars/' . $safe_name;
+                        
+                        error_log("Target path: " . $target_path);
+                        error_log("Web path: " . $web_path);
+                        error_log("Avatar dir exists: " . (is_dir($avatar_dir) ? 'YES' : 'NO'));
+                        
+                        if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $target_path)) {
+                            $profile_image_path = $web_path;
+                            error_log("File moved successfully to: " . $target_path);
+                            error_log("Profile image path set to: " . $profile_image_path);
+                            error_log("File exists after move: " . (file_exists($target_path) ? 'YES' : 'NO'));
+                        } else {
+                            error_log("Failed to move uploaded file");
+                        }
+                    }
+                }
+
+                if ($profile_image_path !== null) {
+                    $stmt = $db->prepare("UPDATE users SET full_name = ?, email = ?, course = ?, year_level = ?, profile_image = ? WHERE id = ?");
+                    $params = [$full_name, $email, $course, $year_level, $profile_image_path, $user_id];
+                } else {
+                    $stmt = $db->prepare("UPDATE users SET full_name = ?, email = ?, course = ?, year_level = ? WHERE id = ?");
+                    $params = [$full_name, $email, $course, $year_level, $user_id];
+                }
+
+                if ($stmt->execute($params)) {
                     $_SESSION['full_name'] = $full_name;
+                    if ($profile_image_path !== null) {
+                        $_SESSION['profile_image'] = $profile_image_path;
+                        // Debug: Log the update
+                        error_log("Profile image updated to: " . $profile_image_path);
+                        error_log("Session profile_image now: " . ($_SESSION['profile_image'] ?? 'null'));
+                    }
                     $message = 'Profile updated successfully!';
                     $message_type = 'success';
+                    
+                    // Force redirect to refresh session and header
+                    header("Location: profile.php?updated=1");
+                    exit();
                 } else {
                     $message = 'Failed to update profile. Please try again.';
                     $message_type = 'error';
@@ -97,6 +151,11 @@ $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch();
 
+// Debug: Check what's in the database vs session
+error_log("Database profile_image: " . ($user['profile_image'] ?? 'null'));
+error_log("Session profile_image: " . ($_SESSION['profile_image'] ?? 'null'));
+error_log("Session full_name: " . ($_SESSION['full_name'] ?? 'null'));
+
 include '../includes/header.php';
 ?>
 
@@ -117,9 +176,25 @@ include '../includes/header.php';
                     <h2 class="card-title">Profile Information</h2>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="" data-validate>
+                    <form method="POST" action="" enctype="multipart/form-data" data-validate>
                         <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                         
+                        <div class="form-group">
+                            <label class="form-label">Profile Picture</label>
+                            <div style="display:flex; align-items:center; gap:1rem;">
+                                <?php $avatar = $user['profile_image'] ?? null; ?>
+                                <div style="width:64px; height:64px; border-radius:50%; overflow:hidden; background:#e0e7ff; display:flex; align-items:center; justify-content:center; font-weight:600; color:#4f46e5;">
+                                    <?php if ($avatar): ?>
+                                        <img src="<?php echo htmlspecialchars($avatar); ?>" alt="Profile picture" style="width:100%; height:100%; object-fit:cover;">
+                                    <?php else: ?>
+                                        <span><?php echo strtoupper(substr($user['full_name'], 0, 1)); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <input type="file" name="profile_image" accept=".jpg,.jpeg,.png">
+                            </div>
+                            <small style="color: var(--medium-gray); font-size: 0.875rem;">Optional. JPG or PNG, up to 5MB.</small>
+                        </div>
+
                         <div class="form-group">
                             <label for="student_id" class="form-label">Student ID</label>
                             <input type="text" id="student_id" class="form-input" 

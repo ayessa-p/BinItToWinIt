@@ -57,19 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['redeem'])) {
                 // Generate redemption code
                 $redemption_code = strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
                 
-                // Deduct tokens
-                $stmt = $db->prepare("UPDATE users SET eco_tokens = eco_tokens - ? WHERE id = ?");
-                $stmt->execute([$reward['token_cost'], $user_id]);
-                
-                // Record transaction
-                $stmt = $db->prepare("
-                    INSERT INTO transactions (user_id, transaction_type, amount, description, related_reward_id) 
-                    VALUES (?, 'redeemed', ?, ?, ?)
-                ");
-                $description = "Redeemed: {$reward['name']}";
-                $stmt->execute([$user_id, $reward['token_cost'], $description, $reward_id]);
-                
-                // Create redemption record
+                // Create redemption record (tokens will be deducted upon approval)
                 $stmt = $db->prepare("
                     INSERT INTO redemptions (user_id, reward_id, tokens_spent, redemption_code, status) 
                     VALUES (?, ?, ?, ?, 'pending')
@@ -84,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['redeem'])) {
                 
                 $db->commit();
                 
-                $message = "Successfully redeemed! Your redemption code is: <strong>{$redemption_code}</strong>. Please present this code to claim your reward.";
+                $message = "Redemption request submitted! Your redemption code is: <strong>{$redemption_code}</strong>. Tokens will be deducted after admin approval.";
                 $message_type = 'success';
                 
                 // Refresh balance

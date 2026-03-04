@@ -201,12 +201,24 @@ include '../includes/header.php';
                                         echo 'color: #90ee90;';
                                     } elseif ($transaction['transaction_type'] === 'redeemed') {
                                         echo 'color: #007bff;';
+                                    } elseif ($transaction['transaction_type'] === 'admin_adjustment') {
+                                        echo $transaction['amount'] >= 0 ? 'color: #90ee90;' : 'color: #ff6b6b;';
                                     } else {
                                         echo 'color: #007bff;';
                                     }
                                     ?>">
-                                    <?php echo $transaction['transaction_type'] === 'earned' ? '+' : '-'; ?>
-                                    <?php echo format_tokens($transaction['amount']); ?>
+                                    <?php 
+                                    if ($transaction['transaction_type'] === 'earned') {
+                                        echo '+';
+                                    } elseif ($transaction['transaction_type'] === 'redeemed') {
+                                        echo '-';
+                                    } elseif ($transaction['transaction_type'] === 'admin_adjustment') {
+                                        echo $transaction['amount'] >= 0 ? '+' : '-';
+                                    } else {
+                                        echo '';
+                                    }
+                                    ?>
+                                    <?php echo format_tokens(abs($transaction['amount'])); ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

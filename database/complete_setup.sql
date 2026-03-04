@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
+    profile_image VARCHAR(255) NULL,
     course VARCHAR(100),
     year_level VARCHAR(20),
     eco_tokens DECIMAL(10, 2) DEFAULT 0.00,
@@ -174,8 +175,31 @@ CREATE TABLE IF NOT EXISTS projects (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
+-- ORG OFFICERS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS org_officers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    position VARCHAR(255) NOT NULL,
+    profile_image VARCHAR(255),
+    display_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_is_active (is_active),
+    INDEX idx_display_order (display_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
 -- DEFAULT DATA
 -- =====================================================
+
+-- Insert sample projects
+INSERT INTO projects (name, description, status, image_url, is_featured) VALUES
+('Tech Workshops', 'Regular workshops covering programming, web development, cybersecurity, and emerging technologies.', 'active', NULL, FALSE),
+('Hackathons & Competitions', 'Coding competitions and hackathons where students can showcase their skills and win prizes.', 'active', NULL, TRUE),
+('Community Outreach', 'Technology education programs for local communities focusing on digital literacy and computer skills.', 'active', NULL, FALSE),
+('Research & Development', 'Collaborative research projects exploring innovative applications of technology in education and sustainability.', 'active', NULL, FALSE);
 
 -- Insert default rewards
 INSERT INTO rewards (name, description, token_cost, category, stock_quantity) VALUES
@@ -188,6 +212,12 @@ INSERT INTO rewards (name, description, token_cost, category, stock_quantity) VA
 INSERT INTO news (title, content, author, is_published) VALUES
 ('Welcome to Bin It to Win It!', 'We are excited to launch our new recycling initiative that rewards students for their environmental efforts. Start recycling today and earn Eco-Tokens!', 'MTICS Admin', TRUE),
 ('MTICS Annual General Meeting', 'Join us for our annual general meeting on March 15th. We will discuss upcoming projects and initiatives for the semester.', 'MTICS Officers', TRUE);
+
+-- Seed initial officers (including Adviser)
+INSERT INTO org_officers (full_name, position, display_order, is_active) VALUES
+('Prof. Pops V. Madriaga', 'MTICS Adviser', 0, TRUE),
+('Juan Dela Cruz', 'Chief Executive President', 1, TRUE),
+('Maria Santos', 'Chief Executive Vice President', 2, TRUE);
 
 INSERT INTO users (student_id, email, password_hash, full_name, is_admin, is_active, eco_tokens)
 VALUES (
@@ -233,6 +263,29 @@ CREATE TABLE IF NOT EXISTS resources (
     INDEX idx_is_active (is_active),
     INDEX idx_available_quantity (available_quantity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Default borrowable equipment
+INSERT INTO resources (name, description, category, type, total_quantity, available_quantity, location, condition_status, is_active, requires_approval, min_user_level) VALUES
+('Projector', 'Standard multimedia projector', 'equipment', 'borrowable', 3, 3, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
+('HDMI Cable', 'High‑speed HDMI cable', 'equipment', 'borrowable', 10, 10, 'MTICS Office', 'excellent', TRUE, FALSE, 'student'),
+('VGA Cable', 'Legacy VGA display cable', 'equipment', 'borrowable', 5, 5, 'MTICS Office', 'good', TRUE, FALSE, 'student'),
+('Power Extension Cord', '4‑socket power extension cord', 'equipment', 'borrowable', 6, 6, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
+('Audio Speaker', 'Portable audio speaker set', 'equipment', 'borrowable', 2, 2, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
+('Microphone', 'Wired microphone for events', 'equipment', 'borrowable', 4, 4, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
+('Whiteboard', 'Portable whiteboard', 'equipment', 'borrowable', 2, 2, 'MTICS Office', 'good', TRUE, FALSE, 'student'),
+('Marker Set', 'Set of whiteboard markers', 'equipment', 'borrowable', 8, 8, 'MTICS Office', 'good', TRUE, FALSE, 'student'),
+('Stapler', 'Standard office stapler', 'equipment', 'borrowable', 4, 4, 'MTICS Office', 'good', TRUE, FALSE, 'student');
+
+-- Default rooms (facility -> room)
+INSERT INTO resources (name, description, category, type, total_quantity, available_quantity, location, condition_status, is_active, requires_approval, min_user_level) VALUES
+('RM101', 'IT Building Room 101', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student'),
+('RM102', 'IT Building Room 102', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student'),
+('RM103', 'IT Building Room 103', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student'),
+('RM201', 'IT Building Room 201', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student'),
+('RM202', 'IT Building Room 202', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student'),
+('RM203', 'IT Building Room 203', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student'),
+('RM301', 'IT Building Room 301', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student'),
+('RM302', 'IT Building Room 302', 'facility', 'room', 1, 1, 'IT Building', 'good', TRUE, TRUE, 'student');
 
 -- Resource reservations table
 CREATE TABLE IF NOT EXISTS resource_reservations (
@@ -319,10 +372,14 @@ CREATE TABLE IF NOT EXISTS printing_services (
     price_per_page DECIMAL(10, 2) NOT NULL,
     color_options ENUM('bw', 'color') DEFAULT 'bw',
     paper_size ENUM('a4', 'a3', 'legal', 'letter') DEFAULT 'a4',
-    max_pages_per_day INT DEFAULT 10,
+    is_available BOOLEAN DEFAULT TRUE,
+    unavailable_reason VARCHAR(255) NULL,
+    unavailable_from DATETIME NULL,
+    unavailable_to DATETIME NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_is_active (is_active)
+    INDEX idx_is_active (is_active),
+    INDEX idx_is_available (is_available)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Internet access plans table
@@ -374,10 +431,10 @@ CREATE TABLE IF NOT EXISTS resource_usage_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Default printing services
-INSERT INTO printing_services (name, description, price_per_page, color_options, paper_size, max_pages_per_day) VALUES
-('Black & White Printing', 'Standard black and white printing service', 1.00, 'bw', 'a4', 10),
-('Color Printing', 'Color printing service for documents and presentations', 5.00, 'color', 'a4', 5),
-('High Quality Printing', 'Premium quality printing for important documents', 8.00, 'color', 'a4', 3);
+INSERT INTO printing_services (name, description, price_per_page, color_options, paper_size, is_available) VALUES
+('Black & White Printing', 'Standard black and white printing service', 1.00, 'bw', 'a4', TRUE),
+('Color Printing', 'Color printing service for documents and presentations', 5.00, 'color', 'a4', TRUE),
+('High Quality Printing', 'Premium quality printing for important documents', 8.00, 'color', 'a4', TRUE);
 
 -- Default internet plans
 INSERT INTO internet_plans (name, description, duration_minutes, token_cost, speed_mbps, data_limit_mb) VALUES
@@ -423,6 +480,33 @@ SELECT
     SUM(sr.tokens_charged) as total_tokens_charged
 FROM service_requests sr
 GROUP BY sr.service_type;
+
+-- =====================================================
+-- CONTACT MESSAGES TABLES
+-- =====================================================
+CREATE TABLE IF NOT EXISTS contact_threads (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    status ENUM('open', 'answered', 'closed') DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    thread_id INT NOT NULL,
+    sender_type ENUM('user','admin','guest') NOT NULL,
+    user_id INT NULL,
+    message_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (thread_id) REFERENCES contact_threads(id) ON DELETE CASCADE,
+    INDEX idx_thread_id (thread_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- SENSOR READINGS TABLE 

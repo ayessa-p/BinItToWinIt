@@ -15,18 +15,83 @@ if (isset($_GET['update_status'])) {
     
     if (in_array($status, ['pending', 'approved', 'fulfilled', 'cancelled'])) {
         try {
-            $stmt = $db->prepare("UPDATE redemptions SET status = ? WHERE id = ?");
-            $stmt->execute([$status, $id]);
+            $db->beginTransaction();
             
-            if ($status === 'fulfilled') {
-                $stmt = $db->prepare("UPDATE redemptions SET fulfilled_at = NOW() WHERE id = ?");
-                $stmt->execute([$id]);
+            // Get current redemption details
+            $stmt = $db->prepare("SELECT * FROM redemptions WHERE id = ?");
+            $stmt->execute([$id]);
+            $redemption = $stmt->fetch();
+            
+            if ($redemption) {
+                // If approving from pending status, deduct tokens
+                if ($status === 'approved' && $redemption['status'] === 'pending') {
+                    // Check user balance
+                    $stmt = $db->prepare("SELECT eco_tokens FROM users WHERE id = ?");
+                    $stmt->execute([$redemption['user_id']]);
+                    $current_balance = $stmt->fetchColumn();
+                    
+                    if ($current_balance < $redemption['tokens_spent']) {
+                        throw new Exception('Insufficient tokens for this redemption.');
+                    }
+                    
+                    // Deduct tokens
+                    $stmt = $db->prepare("UPDATE users SET eco_tokens = eco_tokens - ? WHERE id = ?");
+                    $stmt->execute([$redemption['tokens_spent'], $redemption['user_id']]);
+                    
+                    // Record transaction
+                    $stmt = $db->prepare("SELECT name FROM rewards WHERE id = ?");
+                    $stmt->execute([$redemption['reward_id']]);
+                    $reward = $stmt->fetch();
+                    $description = "Redeemed: " . ($reward['name'] ?? 'Unknown reward');
+                    
+                    $stmt = $db->prepare("
+                        INSERT INTO transactions (user_id, transaction_type, amount, description, related_reward_id) 
+                        VALUES (?, 'redeemed', ?, ?, ?)
+                    ");
+                    $stmt->execute([$redemption['user_id'], $redemption['tokens_spent'], $description, $redemption['reward_id']]);
+                }
+                
+                // If cancelling an approved redemption, refund tokens
+                if ($status === 'cancelled' && $redemption['status'] === 'approved') {
+                    // Refund tokens
+                    $stmt = $db->prepare("UPDATE users SET eco_tokens = eco_tokens + ? WHERE id = ?");
+                    $stmt->execute([$redemption['tokens_spent'], $redemption['user_id']]);
+                    
+                    // Record refund transaction
+                    $stmt = $db->prepare("SELECT name FROM rewards WHERE id = ?");
+                    $stmt->execute([$redemption['reward_id']]);
+                    $reward = $stmt->fetch();
+                    $description = "Refund: Cancelled redemption of " . ($reward['name'] ?? 'Unknown reward');
+                    
+                    $stmt = $db->prepare("
+                        INSERT INTO transactions (user_id, transaction_type, amount, description, related_reward_id) 
+                        VALUES (?, 'refund', ?, ?, ?)
+                    ");
+                    $stmt->execute([$redemption['user_id'], $redemption['tokens_spent'], $description, $redemption['reward_id']]);
+                }
+                
+                // Update redemption status
+                $stmt = $db->prepare("UPDATE redemptions SET status = ? WHERE id = ?");
+                $stmt->execute([$status, $id]);
+                
+                if ($status === 'fulfilled') {
+                    $stmt = $db->prepare("UPDATE redemptions SET fulfilled_at = NOW() WHERE id = ?");
+                    $stmt->execute([$id]);
+                }
+                
+                $db->commit();
+                $message = 'Redemption status updated successfully!';
+                $message_type = 'success';
+            } else {
+                throw new Exception('Redemption not found.');
             }
-            
-            $message = 'Redemption status updated successfully!';
-            $message_type = 'success';
         } catch (PDOException $e) {
-            $message = 'Error updating redemption status.';
+            $db->rollBack();
+            $message = 'Database error: ' . $e->getMessage();
+            $message_type = 'error';
+        } catch (Exception $e) {
+            $db->rollBack();
+            $message = $e->getMessage();
             $message_type = 'error';
         }
     }

@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 require_admin();
 
-$page_title = 'Automation Management';
+$page_title = 'Service Management';
 $admin_user_id = get_user_id();
 $db = Database::getInstance()->getConnection();
 
@@ -229,25 +229,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_printing_service
         $name = sanitize_input($_POST['name'] ?? '');
         $price_per_page = (float)($_POST['price_per_page'] ?? 0);
         $color_options = sanitize_input($_POST['color_options'] ?? 'bw');
-        $max_pages_per_day = (int)($_POST['max_pages_per_day'] ?? 0);
+        $is_available = isset($_POST['is_available']);
+        $unavailable_reason = sanitize_input($_POST['unavailable_reason'] ?? '');
+        $unavailable_from = $_POST['unavailable_from'] ?? null;
+        $unavailable_to = $_POST['unavailable_to'] ?? null;
         $is_active = isset($_POST['is_active']);
         
         try {
             if ($service_id > 0) {
                 $stmt = $db->prepare("
                     UPDATE printing_services SET
-                        name = ?, description = ?, price_per_page = ?, color_options = ?, max_pages_per_day = ?, is_active = ?
+                        name = ?, description = ?, price_per_page = ?, color_options = ?, 
+                        is_available = ?, unavailable_reason = ?, unavailable_from = ?, unavailable_to = ?, 
+                        is_active = ?
                     WHERE id = ?
                 ");
-                $stmt->execute([$name, $name, $price_per_page, $color_options, $max_pages_per_day, $is_active, $service_id]);
+                $stmt->execute([$name, $name, $price_per_page, $color_options, $is_available, $unavailable_reason ?: null, $unavailable_from ?: null, $unavailable_to ?: null, $is_active, $service_id]);
                 $message = 'Printing service updated successfully!';
             } else {
                 $stmt = $db->prepare("
                     INSERT INTO printing_services 
-                    (name, description, price_per_page, color_options, paper_size, max_pages_per_day, is_active)
-                    VALUES (?, ?, ?, ?, 'a4', ?, ?)
+                    (name, description, price_per_page, color_options, paper_size, is_available, unavailable_reason, unavailable_from, unavailable_to, is_active)
+                    VALUES (?, ?, ?, ?, 'a4', ?, ?, ?, ?, ?)
                 ");
-                $stmt->execute([$name, $name, $price_per_page, $color_options, $max_pages_per_day, $is_active]);
+                $stmt->execute([$name, $name, $price_per_page, $color_options, $is_available, $unavailable_reason ?: null, $unavailable_from ?: null, $unavailable_to ?: null, $is_active]);
                 $message = 'Printing service added successfully!';
             }
             $message_type = 'success';
@@ -414,6 +419,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_room_reservati
                     ");
                     $stmt->execute([$admin_user_id, $notes, $reservation_id]);
 
+                    // Optionally set room as inactive for maintenance
+                    if (!empty($_POST['set_room_inactive'])) {
+                        $stmt = $db->prepare("UPDATE resources SET is_active = 0, updated_at = NOW() WHERE category = 'facility' AND type = 'room' AND name = ? LIMIT 1");
+                        $stmt->execute([$reservation['room_code']]);
+                    }
+
                     $message = 'Room reservation approved successfully!';
                     $message_type = 'success';
                 } else {
@@ -500,13 +511,16 @@ if (isset($_GET['edit_equipment'])) {
     }
 }
 
-// Get resource utilization stats
-$resource_stats = [];
-$stmt = $db->query("
-    SELECT * FROM resource_utilization 
-    ORDER BY avg_duration_hours DESC
-");
-$resource_stats = $stmt->fetchAll();
+// Editing context for Rooms Management
+$editing_room = null;
+if (isset($_GET['edit_room'])) {
+    $edit_id = (int)$_GET['edit_room'];
+    if ($edit_id > 0) {
+        $stmt = $db->prepare("SELECT * FROM resources WHERE id = ? AND category = 'facility' AND type = 'room'");
+        $stmt->execute([$edit_id]);
+        $editing_room = $stmt->fetch();
+    }
+}
 
 // Get service request stats
 $service_stats = [];
@@ -522,11 +536,25 @@ include '../includes/admin_header.php';
 <div class="admin-content">
     <div class="admin-container">
         <div class="admin-page-header">
-            <h1 class="admin-page-title">Automation Management</h1>
+            <h1 class="admin-page-title">Service Management</h1>
             <p class="admin-page-subtitle">Manage services and equipment</p>
             <div class="admin-breadcrumb">
                 <a href="<?php echo SITE_URL; ?>/admin/index.php">Home</a> / Automation
             </div>
+        </div>
+        
+        <style>
+            .admin-subnav { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; position: relative; z-index: 5; pointer-events: auto; }
+            .admin-subnav .subnav-btn { text-decoration: none; cursor: pointer; pointer-events: auto; }
+            .mgmt-section { display: none; }
+            .mgmt-section.active { display: block; }
+        </style>
+        <div class="admin-subnav">
+            <a href="#services" role="button" class="admin-btn admin-btn-secondary subnav-btn" data-target="services">Services</a>
+            <a href="#equipment" role="button" class="admin-btn admin-btn-secondary subnav-btn" data-target="equipment">Equipment</a>
+            <a href="#room-reservations" role="button" class="admin-btn admin-btn-secondary subnav-btn" data-target="room-reservations">Room Reservations</a>
+            <a href="#service-requests" role="button" class="admin-btn admin-btn-secondary subnav-btn" data-target="service-requests">Service Requests</a>
+            <a href="#statistics" role="button" class="admin-btn admin-btn-secondary subnav-btn" data-target="statistics">Statistics</a>
         </div>
         
         <?php if ($message): ?>
@@ -535,15 +563,16 @@ include '../includes/admin_header.php';
             </div>
         <?php endif; ?>
         
-        <!-- Service & Equipment Management -->
-        <div class="admin-section">
-            <h2 class="admin-section-title">🔧 Service & Equipment Management</h2>
+        <!-- Service Management -->
+        <div class="admin-section mgmt-section active" id="services">
+            <h2 class="admin-section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Service Management</h2>
 
-            <div class="grid grid-2">
+            <div class="grid grid-1">
                 <!-- Printing Services Management -->
                 <div class="card" id="printing-services">
                     <div class="card-header">
-                        <h3 class="card-title">🖨️ Printing Services</h3>
+                        <h3 class="card-title"><i class="fa-solid fa-print"></i> Printing Services</h3>
+                        <p style="color: var(--medium-gray); margin: 0.5rem 0;">Manage printing services and pricing</p>
                     </div>
                     <div class="card-body">
                         <?php $is_editing_print = !empty($editing_printing_service); ?>
@@ -588,15 +617,44 @@ include '../includes/admin_header.php';
                             </div>
 
                             <div class="admin-form-group">
-                                <label>Max Pages Per Day</label>
+                                <?php 
+                                $is_available = $is_editing_print ? !empty($editing_printing_service['is_available']) : true;
+                                $unavailable_reason = $is_editing_print ? ($editing_printing_service['unavailable_reason'] ?? '') : '';
+                                ?>
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" name="is_available" <?php echo $is_available ? 'checked' : ''; ?>>
+                                    <span>Available</span>
+                                </label>
+                                <small style="color: var(--medium-gray);">Uncheck to mark this printing service as temporarily unavailable.</small>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label>Unavailable Reason (optional)</label>
                                 <input
-                                    type="number"
-                                    name="max_pages_per_day"
+                                    type="text"
+                                    name="unavailable_reason"
                                     class="admin-form-input"
-                                    min="1"
-                                    required
-                                    value="<?php echo $is_editing_print ? (int)($editing_printing_service['max_pages_per_day'] ?? 1) : ''; ?>"
+                                    placeholder="e.g., Printer under maintenance"
+                                    value="<?php echo htmlspecialchars($unavailable_reason); ?>"
                                 >
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label>Unavailable From / To (optional)</label>
+                                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                    <input
+                                        type="datetime-local"
+                                        name="unavailable_from"
+                                        class="admin-form-input"
+                                        value="<?php echo $is_editing_print && !empty($editing_printing_service['unavailable_from']) ? date('Y-m-d\TH:i', strtotime($editing_printing_service['unavailable_from'])) : ''; ?>"
+                                    >
+                                    <input
+                                        type="datetime-local"
+                                        name="unavailable_to"
+                                        class="admin-form-input"
+                                        value="<?php echo $is_editing_print && !empty($editing_printing_service['unavailable_to']) ? date('Y-m-d\TH:i', strtotime($editing_printing_service['unavailable_to'])) : ''; ?>"
+                                    >
+                                </div>
                             </div>
 
                             <div class="admin-form-group">
@@ -624,7 +682,7 @@ include '../includes/admin_header.php';
                                         <th>Service Name</th>
                                         <th>Price/Page</th>
                                         <th>Type</th>
-                                        <th>Max Pages/Day</th>
+                                        <th>Availability</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -649,7 +707,18 @@ include '../includes/admin_header.php';
                                                         <?php echo ucfirst($service['color_options']); ?>
                                                     </span>
                                                 </td>
-                                                <td><?php echo (int)$service['max_pages_per_day']; ?></td>
+                                                <td>
+                                                    <?php if (!empty($service['is_available'])): ?>
+                                                        <span class="badge badge-success">Available</span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-danger">Unavailable</span>
+                                                        <?php if (!empty($service['unavailable_reason'])): ?>
+                                                            <div style="margin-top:0.25rem; font-size:0.8rem; color:var(--medium-gray);">
+                                                                <?php echo htmlspecialchars($service['unavailable_reason']); ?>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td>
                                                     <span class="badge badge-<?php echo $service['is_active'] ? 'success' : 'warning'; ?>">
                                                         <?php echo $service['is_active'] ? 'Active' : 'Inactive'; ?>
@@ -676,145 +745,181 @@ include '../includes/admin_header.php';
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Equipment Management -->
+        <!-- Equipment Management -->
+        <div class="admin-section mgmt-section" id="equipment">
+            <h2 class="admin-section-title"><i class="fa-solid fa-briefcase"></i> Equipment Management</h2>
+            <div class="grid grid-1">
                 <div class="card" id="equipment-management">
                     <div class="card-header">
-                        <h3 class="card-title">🎒 Equipment Management (Borrowable)</h3>
+                        <h3 class="card-title">Inventory</h3>
+                        <p style="color: var(--medium-gray); margin: 0.5rem 0;">Manage equipment inventory and availability</p>
                     </div>
                     <div class="card-body">
                         <?php $is_editing_equipment = !empty($editing_equipment); ?>
-
-                        <form method="POST" action="#equipment-management" style="margin-bottom: 2rem;">
+                        <form method="POST" action="#equipment-management" style="margin-bottom: 1.5rem;">
                             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                             <input type="hidden" name="save_resource" value="1">
                             <input type="hidden" name="resource_id" value="<?php echo $is_editing_equipment ? (int)$editing_equipment['id'] : 0; ?>">
                             <input type="hidden" name="category" value="equipment">
-                            <input type="hidden" name="type" value="borrowable">
-
-                            <div class="admin-form-group">
-                                <label>Equipment Name</label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    class="admin-form-input"
-                                    placeholder="e.g., Projector"
-                                    required
-                                    value="<?php echo $is_editing_equipment ? htmlspecialchars($editing_equipment['name'] ?? '') : ''; ?>"
-                                >
+                            
+                            <div class="grid grid-2">
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label">Equipment Name *</label>
+                                    <input type="text" name="name" class="admin-form-input" required placeholder="e.g., Laptop, Projector"
+                                           value="<?php echo $is_editing_equipment ? htmlspecialchars($editing_equipment['name'] ?? '') : ''; ?>">
+                                </div>
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label">Type</label>
+                                    <?php $eq_type = $is_editing_equipment ? ($editing_equipment['type'] ?? '') : ''; ?>
+                                    <select name="type" class="admin-form-select">
+                                        <option value="">Select type...</option>
+                                        <option value="laptop" <?php echo $eq_type === 'laptop' ? 'selected' : ''; ?>>Laptop</option>
+                                        <option value="projector" <?php echo $eq_type === 'projector' ? 'selected' : ''; ?>>Projector</option>
+                                        <option value="camera" <?php echo $eq_type === 'camera' ? 'selected' : ''; ?>>Camera</option>
+                                        <option value="printer" <?php echo $eq_type === 'printer' ? 'selected' : ''; ?>>Printer</option>
+                                        <option value="other" <?php echo $eq_type === 'other' ? 'selected' : ''; ?>>Other</option>
+                                    </select>
+                                </div>
                             </div>
-
+                            
                             <div class="admin-form-group">
-                                <label>Description</label>
-                                <textarea name="description" class="admin-form-input" rows="3" placeholder="Optional"><?php echo $is_editing_equipment ? htmlspecialchars($editing_equipment['description'] ?? '') : ''; ?></textarea>
+                                <label class="admin-form-label">Description</label>
+                                <textarea name="description" class="admin-form-textarea" placeholder="Specifications and notes"><?php 
+                                    echo $is_editing_equipment ? htmlspecialchars($editing_equipment['description'] ?? '') : ''; 
+                                ?></textarea>
                             </div>
-
-                            <div class="admin-form-group">
-                                <label>Total Quantity</label>
-                                <input
-                                    type="number"
-                                    name="total_quantity"
-                                    class="admin-form-input"
-                                    min="0"
-                                    required
-                                    value="<?php echo $is_editing_equipment ? (int)($editing_equipment['total_quantity'] ?? 0) : 1; ?>"
-                                >
+                            
+                            <div class="grid grid-3">
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label">Total Quantity *</label>
+                                    <input type="number" min="1" name="total_quantity" class="admin-form-input" required
+                                           value="<?php echo $is_editing_equipment ? (int)($editing_equipment['total_quantity'] ?? 1) : ''; ?>">
+                                </div>
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label">Location</label>
+                                    <input type="text" name="location" class="admin-form-input" placeholder="e.g., IT Lab, Room 301"
+                                           value="<?php echo $is_editing_equipment ? htmlspecialchars($editing_equipment['location'] ?? '') : ''; ?>">
+                                </div>
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label">Condition</label>
+                                    <?php $cond = $is_editing_equipment ? ($editing_equipment['condition_status'] ?? 'good') : 'good'; ?>
+                                    <select name="condition_status" class="admin-form-select">
+                                        <option value="excellent" <?php echo $cond === 'excellent' ? 'selected' : ''; ?>>Excellent</option>
+                                        <option value="good" <?php echo $cond === 'good' ? 'selected' : ''; ?>>Good</option>
+                                        <option value="fair" <?php echo $cond === 'fair' ? 'selected' : ''; ?>>Fair</option>
+                                        <option value="poor" <?php echo $cond === 'poor' ? 'selected' : ''; ?>>Poor</option>
+                                    </select>
+                                </div>
                             </div>
-
-                            <div class="admin-form-group">
-                                <label>Location</label>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    class="admin-form-input"
-                                    placeholder="e.g., MTICS Office"
-                                    value="<?php echo $is_editing_equipment ? htmlspecialchars($editing_equipment['location'] ?? '') : ''; ?>"
-                                >
+                            
+                            <div class="grid grid-2">
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label">Minimum User Level</label>
+                                    <?php $lvl = $is_editing_equipment ? ($editing_equipment['min_user_level'] ?? 'student') : 'student'; ?>
+                                    <select name="min_user_level" class="admin-form-select">
+                                        <option value="student" <?php echo $lvl === 'student' ? 'selected' : ''; ?>>Student</option>
+                                        <option value="officer" <?php echo $lvl === 'officer' ? 'selected' : ''; ?>>Officer</option>
+                                        <option value="admin" <?php echo $lvl === 'admin' ? 'selected' : ''; ?>>Admin</option>
+                                    </select>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label style="display:flex;align-items:center;gap:.5rem;">
+                                        <?php $req = $is_editing_equipment ? !empty($editing_equipment['requires_approval']) : false; ?>
+                                        <input type="checkbox" name="requires_approval" <?php echo $req ? 'checked' : ''; ?>>
+                                        <span>Requires Approval</span>
+                                    </label>
+                                </div>
                             </div>
-
+                            
                             <div class="admin-form-group">
-                                <label>Condition</label>
-                                <?php $cond = $is_editing_equipment ? ($editing_equipment['condition_status'] ?? 'good') : 'good'; ?>
-                                <select name="condition_status" class="admin-form-input" required>
-                                    <option value="excellent" <?php echo $cond === 'excellent' ? 'selected' : ''; ?>>Excellent</option>
-                                    <option value="good" <?php echo $cond === 'good' ? 'selected' : ''; ?>>Good</option>
-                                    <option value="fair" <?php echo $cond === 'fair' ? 'selected' : ''; ?>>Fair</option>
-                                    <option value="poor" <?php echo $cond === 'poor' ? 'selected' : ''; ?>>Poor</option>
-                                </select>
-                            </div>
-
-                            <div class="admin-form-group">
-                                <label style="display:flex; align-items:center; gap:.5rem;">
-                                    <input type="checkbox" name="requires_approval" <?php echo $is_editing_equipment && !empty($editing_equipment['requires_approval']) ? 'checked' : ''; ?>>
-                                    <span>Requires approval before borrowing</span>
-                                </label>
-                            </div>
-
-                            <input type="hidden" name="min_user_level" value="student">
-
-                            <div class="admin-form-group">
-                                <?php $equip_active = $is_editing_equipment ? !empty($editing_equipment['is_active']) : true; ?>
-                                <label style="display:flex; align-items:center; gap:.5rem;">
-                                    <input type="checkbox" name="is_active" <?php echo $equip_active ? 'checked' : ''; ?>>
+                                <label style="display:flex;align-items:center;gap:.5rem;">
+                                    <?php $active = $is_editing_equipment ? !empty($editing_equipment['is_active']) : true; ?>
+                                    <input type="checkbox" name="is_active" <?php echo $active ? 'checked' : ''; ?>>
                                     <span>Active</span>
                                 </label>
                             </div>
-
-                            <div style="display:flex; gap: .75rem; flex-wrap: wrap;">
+                            
+                            <div style="display:flex; gap:.75rem; flex-wrap: wrap;">
                                 <button type="submit" class="admin-btn admin-btn-primary">
                                     <?php echo $is_editing_equipment ? 'Update Equipment' : 'Add Equipment'; ?>
                                 </button>
                                 <?php if ($is_editing_equipment): ?>
-                                    <a href="automation.php#equipment-management" class="admin-btn admin-btn-secondary">Cancel</a>
+                                    <a href="automation.php#equipment" class="admin-btn admin-btn-secondary">Cancel</a>
                                 <?php endif; ?>
                             </div>
                         </form>
-
+                        
                         <div class="admin-table-container">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
                                         <th>Equipment</th>
+                                        <th>Type</th>
                                         <th>Total</th>
                                         <th>Available</th>
                                         <th>Location</th>
+                                        <th>Condition</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
-                                    $equipment = $db->query("SELECT * FROM resources WHERE category = 'equipment' ORDER BY name ASC")->fetchAll();
-                                    if (empty($equipment)):
+                                    $eq_rows = $db->query("SELECT * FROM resources WHERE category = 'equipment' ORDER BY name ASC")->fetchAll();
+                                    if (empty($eq_rows)):
                                     ?>
                                         <tr>
-                                            <td colspan="6" style="text-align:center; padding: var(--spacing-md); color: var(--medium-gray);">
+                                            <td colspan="8" style="text-align:center; padding: var(--spacing-md); color: var(--medium-gray);">
                                                 No equipment added yet
                                             </td>
                                         </tr>
                                     <?php else: ?>
-                                        <?php foreach ($equipment as $item): ?>
+                                        <?php foreach ($eq_rows as $item): ?>
                                             <tr>
-                                                <td><?php echo htmlspecialchars($item['name']); ?></td>
-                                                <td><?php echo (int)$item['total_quantity']; ?></td>
-                                                <td><?php echo (int)$item['available_quantity']; ?></td>
-                                                <td><?php echo htmlspecialchars($item['location'] ?? ''); ?></td>
                                                 <td>
-                                                    <span class="badge badge-<?php echo $item['is_active'] ? 'success' : 'warning'; ?>">
-                                                        <?php echo $item['is_active'] ? 'Active' : 'Inactive'; ?>
+                                                    <div style="font-weight: bold;"><?php echo htmlspecialchars($item['name']); ?></div>
+                                                    <?php if (!empty($item['description'])): ?>
+                                                        <div style="font-size: 0.8rem; color: var(--medium-gray);">
+                                                            <?php echo htmlspecialchars(substr($item['description'], 0, 60)) . (strlen($item['description']) > 60 ? '…' : ''); ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><span class="badge badge-info"><?php echo ucfirst(htmlspecialchars($item['type'] ?: 'other')); ?></span></td>
+                                                <td><?php echo (int)$item['total_quantity']; ?></td>
+                                                <td>
+                                                    <span style="color: <?php echo ((int)$item['available_quantity'] > 0) ? '#28a745' : '#dc3545'; ?>; font-weight: bold;">
+                                                        <?php echo (int)$item['available_quantity']; ?>
+                                                    </span>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($item['location'] ?? 'N/A'); ?></td>
+                                                <td>
+                                                    <span class="badge badge-<?php 
+                                                        echo match($item['condition_status'] ?? '') {
+                                                            'excellent' => 'success',
+                                                            'good' => 'info',
+                                                            'fair' => 'warning',
+                                                            'poor' => 'danger',
+                                                            default => 'secondary'
+                                                        };
+                                                    ?>">
+                                                        <?php echo ucfirst($item['condition_status'] ?? 'unknown'); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-<?php echo !empty($item['is_active']) ? 'success' : 'warning'; ?>">
+                                                        <?php echo !empty($item['is_active']) ? 'Active' : 'Inactive'; ?>
                                                     </span>
                                                 </td>
                                                 <td style="white-space: nowrap;">
-                                                    <a class="admin-btn admin-btn-secondary admin-btn-sm" href="automation.php?edit_equipment=<?php echo (int)$item['id']; ?>#equipment-management">
-                                                        Edit
-                                                    </a>
+                                                    <a class="admin-btn admin-btn-secondary admin-btn-sm" href="automation.php?edit_equipment=<?php echo (int)$item['id']; ?>#equipment">Edit</a>
                                                     <form method="POST" action="#equipment-management" style="display:inline;">
                                                         <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                                                         <input type="hidden" name="delete_resource" value="1">
                                                         <input type="hidden" name="resource_id" value="<?php echo (int)$item['id']; ?>">
-                                                        <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" onclick="return confirm('Delete this equipment?')">
-                                                            Delete
-                                                        </button>
+                                                        <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" onclick="return confirm('Delete this equipment?')">Delete</button>
                                                     </form>
                                                 </td>
                                             </tr>
@@ -829,8 +934,106 @@ include '../includes/admin_header.php';
         </div>
 
         <!-- Room Reservation Management -->
-        <div class="admin-section" id="room-reservations">
-            <h2 class="admin-section-title">🏫 Room Reservation Management</h2>
+        <div class="admin-section mgmt-section" id="room-reservations">
+            <h2 class="admin-section-title"><i class="fa-solid fa-building"></i> Room Reservation Management</h2>
+
+            <div class="card" id="rooms-management" style="margin-bottom: 1rem;">
+                <div class="card-header">
+                    <h3 class="card-title">Rooms</h3>
+                    <p style="color: var(--medium-gray); margin: 0.5rem 0;">Add, edit, or remove rooms available for reservation</p>
+                </div>
+                <div class="card-body">
+                    <?php $is_editing_room = !empty($editing_room); ?>
+                    <form method="POST" action="#room-reservations" style="margin-bottom: 1rem; display: grid; gap: 1rem;">
+                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                        <input type="hidden" name="save_resource" value="1">
+                        <input type="hidden" name="resource_id" value="<?php echo $is_editing_room ? (int)$editing_room['id'] : 0; ?>">
+                        <input type="hidden" name="category" value="facility">
+                        <input type="hidden" name="type" value="room">
+                        <input type="hidden" name="total_quantity" value="1">
+                        <input type="hidden" name="condition_status" value="<?php echo $is_editing_room ? htmlspecialchars($editing_room['condition_status'] ?? 'good') : 'good'; ?>">
+                        <input type="hidden" name="min_user_level" value="<?php echo $is_editing_room ? htmlspecialchars($editing_room['min_user_level'] ?? 'student') : 'student'; ?>">
+                        <input type="hidden" name="requires_approval" value="">
+
+                        <div class="grid grid-3">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">Room Code *</label>
+                                <input type="text" name="name" class="admin-form-input" required placeholder="e.g., RM101"
+                                       value="<?php echo $is_editing_room ? htmlspecialchars($editing_room['name'] ?? '') : ''; ?>">
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">Location</label>
+                                <input type="text" name="location" class="admin-form-input" placeholder="e.g., IT Building, Floor 2"
+                                       value="<?php echo $is_editing_room ? htmlspecialchars($editing_room['location'] ?? '') : ''; ?>">
+                            </div>
+                            <div class="admin-form-group" style="display:flex; align-items:center; gap:.5rem;">
+                                <?php $room_active = $is_editing_room ? !empty($editing_room['is_active']) : true; ?>
+                                <label class="admin-form-label" style="margin:0;">Active</label>
+                                <input type="checkbox" name="is_active" <?php echo $room_active ? 'checked' : ''; ?>>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:.75rem; flex-wrap: wrap;">
+                            <button type="submit" class="admin-btn admin-btn-primary">
+                                <?php echo $is_editing_room ? 'Update Room' : 'Add Room'; ?>
+                            </button>
+                            <?php if ($is_editing_room): ?>
+                                <a href="automation.php#room-reservations" class="admin-btn admin-btn-secondary">Cancel</a>
+                            <?php endif; ?>
+                        </div>
+                    </form>
+
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Room</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $room_rows = $db->query("SELECT * FROM resources WHERE category = 'facility' AND type = 'room' ORDER BY name ASC")->fetchAll();
+                                if (empty($room_rows)):
+                                ?>
+                                    <tr>
+                                        <td colspan="4" style="text-align:center; padding: var(--spacing-md); color: var(--medium-gray);">
+                                            No rooms added yet
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($room_rows as $room): ?>
+                                        <tr>
+                                            <td><strong><?php echo htmlspecialchars($room['name']); ?></strong></td>
+                                            <td><?php echo htmlspecialchars($room['location'] ?? ''); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo !empty($room['is_active']) ? 'success' : 'warning'; ?>">
+                                                    <?php echo !empty($room['is_active']) ? 'Active' : 'Inactive'; ?>
+                                                </span>
+                                            </td>
+                                            <td style="white-space:nowrap;">
+                                                <a class="admin-btn admin-btn-secondary admin-btn-sm" href="automation.php?edit_room=<?php echo (int)$room['id']; ?>#room-reservations">Edit</a>
+                                                <form method="POST" action="#room-reservations" style="display:inline;">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                                                    <input type="hidden" name="delete_resource" value="1">
+                                                    <input type="hidden" name="resource_id" value="<?php echo (int)$room['id']; ?>">
+                                                    <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" onclick="return confirm('Delete this room?')">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p style="margin-top: .75rem; color: var(--medium-gray); font-size: .9rem;">
+                        Approving a reservation automatically blocks overlapping bookings. You may also mark a room as inactive for maintenance using the toggle above.
+                    </p>
+                </div>
+            </div>
 
             <div class="card">
                 <div class="card-header">
@@ -897,6 +1100,10 @@ include '../includes/admin_header.php';
                                                             placeholder="Notes (optional)"
                                                             style="min-width: 180px;"
                                                         >
+                                                        <label style="display:flex; align-items:center; gap:.35rem;">
+                                                            <input type="checkbox" name="set_room_inactive">
+                                                            <span style="font-size:.85rem; color: var(--medium-gray);">Set room inactive</span>
+                                                        </label>
                                                         <button type="submit" name="action" value="approve" class="admin-btn admin-btn-primary admin-btn-sm">
                                                             Approve
                                                         </button>
@@ -919,8 +1126,8 @@ include '../includes/admin_header.php';
         </div>
 
         <!-- Service Request Management -->
-        <div class="admin-section">
-            <h2 class="admin-section-title">🔧 Service Request Management</h2>
+        <div class="admin-section mgmt-section" id="service-requests">
+            <h2 class="admin-section-title"><i class="fa-solid fa-wrench"></i> Service Request Management</h2>
             
             <!-- Request Statistics -->
             <div style="margin-bottom: 2rem;">
@@ -1208,49 +1415,10 @@ include '../includes/admin_header.php';
         </div>
         
         <!-- Statistics Dashboard -->
-        <div class="admin-section">
-            <h2 class="admin-section-title">📊 System Statistics</h2>
+        <div class="admin-section mgmt-section" id="statistics">
+            <h2 class="admin-section-title"><i class="fa-solid fa-chart-column"></i> System Statistics</h2>
             
-            <div class="grid grid-2">
-                <!-- Resource Utilization -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Resource Utilization</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="admin-table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Resource</th>
-                                        <th>Total Reservations</th>
-                                        <th>Approved</th>
-                                        <th>Avg Duration</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($resource_stats)): ?>
-                                        <tr>
-                                            <td colspan="4" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
-                                                No utilization data available
-                                            </td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($resource_stats as $stat): ?>
-                                            <tr>
-                                                <td><?php echo htmlspecialchars($stat['name']); ?></td>
-                                                <td><?php echo $stat['total_reservations']; ?></td>
-                                                <td><?php echo $stat['approved_reservations']; ?></td>
-                                                <td><?php echo number_format((float)($stat['avg_duration_hours'] ?? 0), 1); ?> hrs</td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
+            <div class="grid grid-1">
                 <!-- Service Request Stats -->
                 <div class="card">
                     <div class="card-header">
@@ -1292,7 +1460,6 @@ include '../includes/admin_header.php';
                             </table>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
     </div>
@@ -1333,6 +1500,42 @@ function deleteRequest(id) {
         form.submit();
     }
 }
+
+;(function(){
+    const sections = Array.from(document.querySelectorAll('.mgmt-section'));
+    const subnav = Array.from(document.querySelectorAll('.admin-subnav .subnav-btn'));
+    function activate(id) {
+        sections.forEach(s => s.classList.toggle('active', s.id === id));
+        subnav.forEach(a => {
+            const tgt = a.getAttribute('data-target');
+            if (tgt === id) {
+                a.classList.remove('admin-btn-secondary');
+                a.classList.add('admin-btn-primary');
+            } else {
+                a.classList.remove('admin-btn-primary');
+                a.classList.add('admin-btn-secondary');
+            }
+        });
+    }
+    function fromHash(h) {
+        const v = (h || '').replace('#','');
+        const known = ['services','equipment','room-reservations','service-requests','statistics'];
+        return known.includes(v) ? v : 'services';
+    }
+    subnav.forEach(a => {
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tgt = a.getAttribute('data-target');
+            if (!tgt) return;
+            if (location.hash !== '#' + tgt) {
+                location.hash = '#' + tgt;
+            }
+            activate(tgt);
+        });
+    });
+    window.addEventListener('hashchange', () => activate(fromHash(location.hash)));
+    activate(fromHash(location.hash));
+})();
 </script>
 
 <?php include '../includes/admin_footer.php'; ?>

@@ -157,10 +157,10 @@ include '../includes/admin_header.php';
                     <p>Edit rewards and update stock quantities</p>
                 </a>
                 
-                <a href="equipment.php" class="action-card">
-                    <div class="action-icon"><i class="fa-solid fa-laptop"></i></div>
-                    <h3>Equipment</h3>
-                    <p>Manage equipment inventory and borrowing</p>
+                <a href="messages.php" class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-envelope"></i></div>
+                    <h3>Messages</h3>
+                    <p>View and reply to messages</p>
                 </a>
                 
                 <a href="automation.php" class="action-card">

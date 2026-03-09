@@ -3,6 +3,10 @@
 -- Complete Database Setup
 -- =====================================================
 
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
 -- Create database
 CREATE DATABASE IF NOT EXISTS binittowinit;
 USE binittowinit;
@@ -574,3 +578,5 @@ GROUP BY e.id, e.title, e.event_date;
 --   Student ID/Email: mtics.official
 --   Password: mticstuptaguig
 -- =====================================================
+
+COMMIT;

@@ -2,89 +2,33 @@
 
 ## Initial Setup
 
-### 1. Update Database Schema
+### 1. Import Database
 
-Run the admin update SQL file to add admin functionality:
-
-```sql
--- In phpMyAdmin, select the 'binittowinit' database and run:
--- File: database/admin_update.sql
-```
-
-Or manually run:
+For a fresh installation, import the complete setup SQL file:
 
 ```sql
-USE binittowinit;
-
--- Add is_admin field
-ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
-
--- Create events table
-CREATE TABLE IF NOT EXISTS events (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    event_date DATETIME,
-    location VARCHAR(255),
-    image_url VARCHAR(500),
-    is_published BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_event_date (event_date),
-    INDEX idx_is_published (is_published)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Create projects table
-CREATE TABLE IF NOT EXISTS projects (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    status VARCHAR(50) DEFAULT 'active',
-    image_url VARCHAR(500),
-    is_featured BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_status (status),
-    INDEX idx_is_featured (is_featured)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- In phpMyAdmin, select 'Import' and choose:
+-- File: database/complete_setup.sql
 ```
 
-### 2. Create Default Admin Account
+This file will create the database `binittowinit` if it doesn't exist, create all necessary tables, and seed it with initial data and an admin account.
 
-**Option 1: Use the Setup Script (Recommended)**
-1. Navigate to: `http://localhost/BinItToWinIt/admin/create_admin.php`
-2. The script will create the admin account automatically
-3. **Delete the file after use for security**
-
-**Option 2: Manual SQL (Alternative)**
-Run this SQL after generating a password hash:
-```sql
--- First, generate password hash using PHP:
--- <?php echo password_hash('mticstuptaguig', PASSWORD_DEFAULT); ?>
--- Then insert the user with the generated hash
-
-INSERT INTO users (student_id, email, password_hash, full_name, is_admin, is_active, eco_tokens)
-VALUES (
-    'mtics.official',
-    'mtics.official@mtics.edu.ph',
-    'GENERATED_PASSWORD_HASH_HERE',
-    'MTICS Official Admin',
-    1,
-    1,
-    0.00
-);
-```
+### 2. Default Admin Account
 
 **Default Admin Credentials:**
 - **Student ID/Email:** `mtics.official`
 - **Password:** `mticstuptaguig`
 
-**Note:** If you already have a user account, you can promote them to admin:
-```sql
-UPDATE users SET is_admin = 1 WHERE student_id = 'YOUR_STUDENT_ID';
-```
+### 3. Ensure Directory Permissions
 
-### 3. Access Admin Panel
+Make sure the following directories exist and are writable by the web server:
+- `uploads/`
+- `uploads/avatars/`
+- `uploads/events/`
+- `uploads/attendance/`
+- `uploads/printing/`
+
+### 4. Access Admin Panel
 
 1. Log in with an admin account
 2. Navigate to: `http://localhost/BinItToWinIt/admin/index.php`

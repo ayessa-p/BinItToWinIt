@@ -68,23 +68,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($_POST['delete_gallery']) && is_array($_POST['delete_gallery']) && count($gallery_array) > 0) {
                 $to_delete = $_POST['delete_gallery'];
                 foreach ($to_delete as $del) {
-                    // remove from filesystem
                     $file_path = __DIR__ . '/../' . $del;
                     if (file_exists($file_path)) @unlink($file_path);
-                    // remove from array values
                     $idx = array_search($del, $gallery_array);
                     if ($idx !== false) unset($gallery_array[$idx]);
                 }
-                // reindex
                 $gallery_array = array_values($gallery_array);
             }
         }
+
         $upload_dir = '../uploads/events/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
-
-
 
         // thumbnail upload
         if ($has_thumbnail && isset($_FILES['thumbnail_image']) && $_FILES['thumbnail_image']['error'] == UPLOAD_ERR_OK) {
@@ -110,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        
+
         if (empty($title) || empty($description) || empty($event_date)) {
             $message = 'Please fill in all required fields.';
             $message_type = 'error';
@@ -120,15 +116,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $gallery_json = json_encode($gallery_array);
                     if ($id > 0) {
                         $stmt = $db->prepare("
-                            UPDATE events SET title = ?, description = ?, event_date = ?, 
+                            UPDATE events SET title = ?, description = ?, event_date = ?,
                             location = ?, image_url = ?, thumbnail_url = ?, gallery_json = ?, is_published = ?, attendance_enabled = ? WHERE id = ?
                         ");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $attendance_enabled, $id]);
                         $message = 'Event updated successfully!';
                     } else {
                         $stmt = $db->prepare("
-                            INSERT INTO events (title, description, event_date, location, image_url, thumbnail_url, gallery_json, is_published, attendance_enabled) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO events (title, description, event_date, location, image_url, thumbnail_url, gallery_json, is_published, attendance_enabled, attendance_closed)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                         ");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $attendance_enabled]);
                         $message = 'Event created successfully!';
@@ -137,15 +133,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // fallback for older schema
                     if ($id > 0) {
                         $stmt = $db->prepare("
-                            UPDATE events SET title = ?, description = ?, event_date = ?, 
+                            UPDATE events SET title = ?, description = ?, event_date = ?,
                             location = ?, image_url = ?, is_published = ?, attendance_enabled = ? WHERE id = ?
                         ");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $attendance_enabled, $id]);
                         $message = 'Event updated successfully!';
                     } else {
                         $stmt = $db->prepare("
-                            INSERT INTO events (title, description, event_date, location, image_url, is_published, attendance_enabled) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO events (title, description, event_date, location, image_url, is_published, attendance_enabled, attendance_closed)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, 0)
                         ");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $attendance_enabled]);
                         $message = 'Event created successfully!';
@@ -170,6 +166,25 @@ if (isset($_GET['delete'])) {
         $message_type = 'success';
     } catch (PDOException $e) {
         $message = 'Error deleting event.';
+        $message_type = 'error';
+    }
+}
+
+// Handle close/reopen attendance
+if (isset($_GET['toggle_attendance_closed'])) {
+    $id = (int)$_GET['toggle_attendance_closed'];
+    try {
+        $stmt = $db->prepare("UPDATE events SET attendance_closed = NOT attendance_closed WHERE id = ?");
+        $stmt->execute([$id]);
+        $stmt2 = $db->prepare("SELECT attendance_closed FROM events WHERE id = ?");
+        $stmt2->execute([$id]);
+        $row = $stmt2->fetch();
+        $message = $row['attendance_closed']
+            ? 'Attendance closed. Users can no longer submit.'
+            : 'Attendance reopened. Users can now submit again.';
+        $message_type = 'success';
+    } catch (PDOException $e) {
+        $message = 'Error updating attendance status.';
         $message_type = 'error';
     }
 }
@@ -206,13 +221,13 @@ include '../includes/admin_header.php';
                 <a href="<?php echo SITE_URL; ?>/admin/index.php">Home</a> / Events
             </div>
         </div>
-        
+
         <?php if ($message): ?>
             <div class="alert alert-<?php echo $message_type; ?>" style="margin-bottom: var(--spacing-md);">
                 <?php echo htmlspecialchars($message); ?>
             </div>
         <?php endif; ?>
-        
+
         <div class="admin-section">
             <h2 class="admin-section-title"><?php echo $edit_event ? 'Edit Event' : 'Create New Event'; ?></h2>
             <form method="POST" class="admin-form" enctype="multipart/form-data">
@@ -220,30 +235,30 @@ include '../includes/admin_header.php';
                 <?php if ($edit_event): ?>
                     <input type="hidden" name="event_id" value="<?php echo $edit_event['id']; ?>">
                 <?php endif; ?>
-                
+
                 <div class="admin-form-group">
                     <label class="admin-form-label">Title *</label>
-                    <input type="text" name="title" class="admin-form-input" 
+                    <input type="text" name="title" class="admin-form-input"
                            value="<?php echo $edit_event ? htmlspecialchars($edit_event['title']) : ''; ?>" required>
                 </div>
-                
+
                 <div class="admin-form-group">
                     <label class="admin-form-label">Description *</label>
                     <textarea name="description" class="admin-form-textarea" required><?php echo $edit_event ? htmlspecialchars($edit_event['description']) : ''; ?></textarea>
                 </div>
-                
+
                 <div class="admin-form-group">
                     <label class="admin-form-label">Event Date & Time *</label>
-                    <input type="datetime-local" name="event_date" class="admin-form-input" 
+                    <input type="datetime-local" name="event_date" class="admin-form-input"
                            value="<?php echo $edit_event ? date('Y-m-d\TH:i', strtotime($edit_event['event_date'])) : ''; ?>" required>
                 </div>
-                
+
                 <div class="admin-form-group">
                     <label class="admin-form-label">Location</label>
-                    <input type="text" name="location" class="admin-form-input" 
+                    <input type="text" name="location" class="admin-form-input"
                            value="<?php echo $edit_event ? htmlspecialchars($edit_event['location']) : ''; ?>">
                 </div>
-                
+
                 <div class="admin-form-group">
                     <label class="admin-form-label">Thumbnail Image</label>
                     <input type="file" name="thumbnail_image" class="admin-form-input" accept="image/*">
@@ -283,19 +298,17 @@ include '../includes/admin_header.php';
                     <?php endif; ?>
                 </div>
 
-
-                
                 <div class="admin-form-group">
                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" name="is_published" 
+                        <input type="checkbox" name="is_published"
                                <?php echo ($edit_event && $edit_event['is_published']) ? 'checked' : ''; ?>>
                         <span>Publish Event</span>
                     </label>
                 </div>
-                
+
                 <div class="admin-form-group">
                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" name="attendance_enabled" 
+                        <input type="checkbox" name="attendance_enabled"
                                <?php echo ($edit_event && $edit_event['attendance_enabled']) ? 'checked' : ''; ?>>
                         <span>Enable Attendance Tracking</span>
                     </label>
@@ -303,7 +316,7 @@ include '../includes/admin_header.php';
                         Allow users to submit attendance with proof photos and earn tokens
                     </small>
                 </div>
-                
+
                 <button type="submit" class="admin-btn admin-btn-primary">
                     <?php echo $edit_event ? 'Update Event' : 'Create Event'; ?>
                 </button>
@@ -312,7 +325,7 @@ include '../includes/admin_header.php';
                 <?php endif; ?>
             </form>
         </div>
-        
+
         <div class="admin-section">
             <h2 class="admin-section-title">All Events</h2>
             <div class="admin-table-container">
@@ -331,7 +344,7 @@ include '../includes/admin_header.php';
                     <tbody>
                         <?php if (empty($all_events)): ?>
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
+                                <td colspan="7" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
                                     No events found. Create your first event above.
                                 </td>
                             </tr>
@@ -351,7 +364,7 @@ include '../includes/admin_header.php';
                                         }
                                     ?>
                                     <?php if (!empty($thumb)): ?>
-                                        <img src="<?php echo SITE_URL . '/' . htmlspecialchars($thumb); ?>" 
+                                        <img src="<?php echo SITE_URL . '/' . htmlspecialchars($thumb); ?>"
                                             alt="<?php echo htmlspecialchars($event['title']); ?>"
                                             style="width: 48px; height: 36px; object-fit: cover; border-radius: var(--radius-sm);">
                                     <?php else: ?>
@@ -363,13 +376,12 @@ include '../includes/admin_header.php';
                                 <td><?php echo htmlspecialchars($event['location'] ?: 'N/A'); ?></td>
                                 <td>
                                     <?php
-                                        // Get attendance count for this event
                                         $stmt_att = $db->prepare("
-                                            SELECT 
+                                            SELECT
                                                 COUNT(*) as total,
                                                 COUNT(CASE WHEN attendance_status = 'approved' THEN 1 END) as approved,
                                                 COUNT(CASE WHEN attendance_status = 'pending' THEN 1 END) as pending
-                                            FROM event_attendance 
+                                            FROM event_attendance
                                             WHERE event_id = ?
                                         ");
                                         $stmt_att->execute([$event['id']]);
@@ -388,17 +400,37 @@ include '../includes/admin_header.php';
                                         <?php if ($event['attendance_enabled']): ?>
                                             <span class="badge badge-info">Attendance ON</span>
                                         <?php endif; ?>
+                                        <?php if (!empty($event['attendance_closed'])): ?>
+                                            <span class="badge" style="background: #dc3545; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                                                🔒 Attendance Closed
+                                            </span>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                                 <td>
                                     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                                         <a href="?edit=<?php echo $event['id']; ?>" class="admin-btn admin-btn-secondary admin-btn-sm" style="width: 100%; text-align: center;">Edit</a>
-                                        <a href="?delete=<?php echo $event['id']; ?>" 
+                                        <a href="?delete=<?php echo $event['id']; ?>"
                                            class="admin-btn admin-btn-danger admin-btn-sm"
                                            style="width: 100%; text-align: center;"
                                            onclick="return confirm('Are you sure you want to delete this event?');">Delete</a>
                                         <?php if ($event['attendance_enabled']): ?>
                                             <a href="?manage_attendance=<?php echo $event['id']; ?>" class="admin-btn admin-btn-primary admin-btn-sm" style="width: 100%; text-align: center;">Manage Attendance</a>
+                                            <?php if (empty($event['attendance_closed'])): ?>
+                                                <a href="?toggle_attendance_closed=<?php echo $event['id']; ?>"
+                                                   class="admin-btn admin-btn-warning admin-btn-sm"
+                                                   style="width: 100%; text-align: center; background: #f59e0b; color: #fff; border-color: #f59e0b;"
+                                                   onclick="return confirm('Close attendance? Users will no longer be able to submit.');">
+                                                    🔒 Close Attendance
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="?toggle_attendance_closed=<?php echo $event['id']; ?>"
+                                                   class="admin-btn admin-btn-success admin-btn-sm"
+                                                   style="width: 100%; text-align: center;"
+                                                   onclick="return confirm('Reopen attendance? Users will be able to submit again.');">
+                                                    🔓 Reopen Attendance
+                                                </a>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>

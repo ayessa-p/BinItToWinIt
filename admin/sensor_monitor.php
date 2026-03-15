@@ -75,7 +75,6 @@ include '../includes/admin_header.php';
                             <th>Time</th>
                             <th>Device ID</th>
                             <th>Weight</th>
-                            <th>Distance</th>
                             <th>Metal</th>
                             <th>Status</th>
                         </tr>
@@ -83,7 +82,7 @@ include '../includes/admin_header.php';
                     <tbody>
                         <?php if (empty($readings)): ?>
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
+                                <td colspan="5" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
                                     No sensor readings found
                                 </td>
                             </tr>
@@ -97,7 +96,6 @@ include '../includes/admin_header.php';
                                         <span class="badge badge-info"><?php echo htmlspecialchars($reading['device_id']); ?></span>
                                     </td>
                                     <td><?php echo number_format($reading['weight'], 1); ?>g</td>
-                                    <td><?php echo number_format($reading['distance'], 1); ?>cm</td>
                                     <td>
                                         <span class="badge badge-<?php echo $reading['is_metal'] ? 'warning' : 'success'; ?>">
                                             <?php echo $reading['is_metal'] ? 'Yes' : 'No'; ?>

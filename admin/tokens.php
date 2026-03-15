@@ -133,6 +133,42 @@ include '../includes/admin_header.php';
                 </button>
             </form>
         </div>
+
+        <div class="admin-section">
+            <h2 class="admin-section-title">Token Earning Reference</h2>
+            <div style="background: white; border-radius: var(--radius-md); padding: 1.5rem; border: 1px solid var(--light-gray);">
+                <p style="margin-bottom: 1.5rem; color: var(--dark-gray); font-size: 0.95rem;">
+                    These are the standard rates used by the recycling sensors for automated token distribution based on bottle weight.
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                    <div style="padding: 1rem; border: 1px solid #eee; border-radius: 8px; text-align: center; background: #fdfdfd;">
+                        <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem;">Below 10g</div>
+                        <div style="font-weight: 700; color: #dc3545; font-size: 1.1rem;">0 Tokens</div>
+                        <div style="font-size: 0.7rem; color: #999;">(Rejected)</div>
+                    </div>
+                    <div style="padding: 1rem; border: 1px solid #eee; border-radius: 8px; text-align: center; background: #fdfdfd;">
+                        <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem;">10g - 13g</div>
+                        <div style="font-weight: 700; color: var(--primary-blue); font-size: 1.1rem;">1 Token</div>
+                        <div style="font-size: 0.7rem; color: #999;">(Cap / Tiny)</div>
+                    </div>
+                    <div style="padding: 1rem; border: 1px solid #eee; border-radius: 8px; text-align: center; background: #fdfdfd;">
+                        <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem;">14g - 17g</div>
+                        <div style="font-weight: 700; color: var(--primary-blue); font-size: 1.1rem;">2 Tokens</div>
+                        <div style="font-size: 0.7rem; color: #999;">(Small Bottle)</div>
+                    </div>
+                    <div style="padding: 1rem; border: 1px solid #eee; border-radius: 8px; text-align: center; background: #fdfdfd;">
+                        <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem;">18g - 22g</div>
+                        <div style="font-weight: 700; color: var(--primary-blue); font-size: 1.1rem;">3 Tokens</div>
+                        <div style="font-size: 0.7rem; color: #999;">(Medium Bottle)</div>
+                    </div>
+                    <div style="padding: 1rem; border: 1px solid #eee; border-radius: 8px; text-align: center; background: #fdfdfd;">
+                        <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem;">23g & above</div>
+                        <div style="font-weight: 700; color: #28a745; font-size: 1.1rem;">4 Tokens</div>
+                        <div style="font-size: 0.7rem; color: #999;">(Large Bottle)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div class="admin-section">
             <h2 class="admin-section-title">All Users Token Balances</h2>

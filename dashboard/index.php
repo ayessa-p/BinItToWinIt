@@ -96,6 +96,48 @@ include '../includes/header.php';
                 <p style="color: var(--medium-gray);">Redeem Your Tokens</p>
             </div>
         </div>
+
+        <!-- Token Earning Legend -->
+        <div class="card" style="margin-bottom: 3rem; background: #f8f9fa; border: 1px solid #dee2e6;">
+            <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; padding: 1.5rem;">
+                <h2 class="card-title" style="margin: 0; display: flex; align-items: center; color: #333;">
+                    <i class="fas fa-info-circle" style="margin-right: 0.75rem; color: #007bff;"></i>
+                    Eco-Token Earning Guide
+                </h2>
+                <p style="margin: 0.5rem 0 0; color: #666; font-size: 0.95rem;">
+                    Tokens are awarded based on the weight of the recycled PET bottle. Heavier bottles mean more plastic recycled!
+                </p>
+            </div>
+            <div class="card-body" style="padding: 2rem;">
+                <div class="grid grid-5" style="gap: 1rem;">
+                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">Below 10g</div>
+                        <div style="font-weight: 700; color: #dc3545; font-size: 1.25rem;">0 Tokens</div>
+                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">(Too small)</div>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">10g - 13g</div>
+                        <div style="font-weight: 700; color: #007bff; font-size: 1.25rem;">1 Token</div>
+                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">(Cap / Tiny)</div>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">14g - 17g</div>
+                        <div style="font-weight: 700; color: #007bff; font-size: 1.25rem;">2 Tokens</div>
+                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">(Small Bottle)</div>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">18g - 22g</div>
+                        <div style="font-weight: 700; color: #007bff; font-size: 1.25rem;">3 Tokens</div>
+                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">(Medium Bottle)</div>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">23g & above</div>
+                        <div style="font-weight: 700; color: #28a745; font-size: 1.25rem;">4 Tokens</div>
+                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">(Large Bottle)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <!-- Recent Activities -->
         <?php if (!empty($recent_activities)): ?>

@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_resource'])) {
         $location = sanitize_input($_POST['location'] ?? '');
         $condition_status = sanitize_input($_POST['condition_status'] ?? 'good');
         $requires_approval = isset($_POST['requires_approval']);
+        $is_consumable = isset($_POST['is_consumable']) ? 1 : 0;
         $min_user_level = sanitize_input($_POST['min_user_level'] ?? 'student');
         $is_active = isset($_POST['is_active']);
         
@@ -48,24 +49,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_resource'])) {
                 $stmt = $db->prepare("
                     UPDATE resources SET 
                     name = ?, description = ?, category = ?, type = ?, total_quantity = ?, available_quantity = ?,
-                    location = ?, condition_status = ?, requires_approval = ?,
+                    location = ?, condition_status = ?, requires_approval = ?, is_consumable = ?,
                     min_user_level = ?, is_active = ?, updated_at = NOW()
                     WHERE id = ?
                 ");
                 $stmt->execute([$name, $description, $category, $type, $total_quantity, $new_available,
-                               $location, $condition_status, $requires_approval, $min_user_level, $is_active, $id]);
+                               $location, $condition_status, $requires_approval, $is_consumable, $min_user_level, $is_active, $id]);
                 $message = 'Resource updated successfully!';
             } else {
                 // Create new resource
                 $stmt = $db->prepare("
                     INSERT INTO resources 
                     (name, description, category, type, total_quantity, available_quantity, location, 
-                     condition_status, requires_approval, min_user_level, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     condition_status, requires_approval, is_consumable, min_user_level, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $stmt->execute([$name, $description, $category, $type, $total_quantity, 
                                $total_quantity, $location, $condition_status, $requires_approval, 
-                               $min_user_level, $is_active]);
+                               $is_consumable, $min_user_level, $is_active]);
                 $message = 'Resource created successfully!';
             }
             $message_type = 'success';
@@ -505,7 +506,7 @@ $editing_equipment = null;
 if (isset($_GET['edit_equipment'])) {
     $edit_id = (int)$_GET['edit_equipment'];
     if ($edit_id > 0) {
-        $stmt = $db->prepare("SELECT * FROM resources WHERE id = ? AND category = 'equipment'");
+        $stmt = $db->prepare("SELECT * FROM resources WHERE id = ? AND category != 'facility'");
         $stmt->execute([$edit_id]);
         $editing_equipment = $stmt->fetch();
     }
@@ -763,23 +764,30 @@ include '../includes/admin_header.php';
                             <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                             <input type="hidden" name="save_resource" value="1">
                             <input type="hidden" name="resource_id" value="<?php echo $is_editing_equipment ? (int)$editing_equipment['id'] : 0; ?>">
-                            <input type="hidden" name="category" value="equipment">
                             
-                            <div class="grid grid-2">
+                            <div class="grid grid-3">
                                 <div class="admin-form-group">
                                     <label class="admin-form-label">Equipment Name *</label>
                                     <input type="text" name="name" class="admin-form-input" required placeholder="e.g., Laptop, Projector"
                                            value="<?php echo $is_editing_equipment ? htmlspecialchars($editing_equipment['name'] ?? '') : ''; ?>">
                                 </div>
                                 <div class="admin-form-group">
+                                    <label class="admin-form-label">Category *</label>
+                                    <?php $eq_cat = $is_editing_equipment ? ($editing_equipment['category'] ?? 'equipment') : 'equipment'; ?>
+                                    <select name="category" class="admin-form-select" required>
+                                        <option value="Office Supplies" <?php echo $eq_cat === 'Office Supplies' ? 'selected' : ''; ?>>Office Supplies</option>
+                                        <option value="Tech" <?php echo $eq_cat === 'Tech' ? 'selected' : ''; ?>>Tech</option>
+                                        <option value="Equipment" <?php echo $eq_cat === 'Equipment' ? 'selected' : ''; ?>>Equipment</option>
+                                        <option value="Other" <?php echo $eq_cat === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                    </select>
+                                </div>
+                                <div class="admin-form-group">
                                     <label class="admin-form-label">Type</label>
                                     <?php $eq_type = $is_editing_equipment ? ($editing_equipment['type'] ?? '') : ''; ?>
                                     <select name="type" class="admin-form-select">
                                         <option value="">Select type...</option>
-                                        <option value="laptop" <?php echo $eq_type === 'laptop' ? 'selected' : ''; ?>>Laptop</option>
-                                        <option value="projector" <?php echo $eq_type === 'projector' ? 'selected' : ''; ?>>Projector</option>
-                                        <option value="camera" <?php echo $eq_type === 'camera' ? 'selected' : ''; ?>>Camera</option>
-                                        <option value="printer" <?php echo $eq_type === 'printer' ? 'selected' : ''; ?>>Printer</option>
+                                        <option value="borrowable" <?php echo $eq_type === 'borrowable' ? 'selected' : ''; ?>>Borrowable</option>
+                                        <option value="consumable" <?php echo $eq_type === 'consumable' ? 'selected' : ''; ?>>Consumable</option>
                                         <option value="other" <?php echo $eq_type === 'other' ? 'selected' : ''; ?>>Other</option>
                                     </select>
                                 </div>
@@ -832,6 +840,13 @@ include '../includes/admin_header.php';
                                         <span>Requires Approval</span>
                                     </label>
                                 </div>
+                                <div class="admin-form-group">
+                                    <label style="display:flex;align-items:center;gap:.5rem;">
+                                        <?php $is_cons = $is_editing_equipment ? !empty($editing_equipment['is_consumable']) : false; ?>
+                                        <input type="checkbox" name="is_consumable" <?php echo $is_cons ? 'checked' : ''; ?>>
+                                        <span>Consumable Item</span>
+                                    </label>
+                                </div>
                             </div>
                             
                             <div class="admin-form-group">
@@ -857,22 +872,21 @@ include '../includes/admin_header.php';
                                 <thead>
                                     <tr>
                                         <th>Equipment</th>
+                                        <th>Category</th>
                                         <th>Type</th>
                                         <th>Total</th>
                                         <th>Available</th>
-                                        <th>Location</th>
-                                        <th>Condition</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
-                                    $eq_rows = $db->query("SELECT * FROM resources WHERE category = 'equipment' ORDER BY name ASC")->fetchAll();
+                                    $eq_rows = $db->query("SELECT * FROM resources WHERE category != 'facility' ORDER BY category, name ASC")->fetchAll();
                                     if (empty($eq_rows)):
                                     ?>
                                         <tr>
-                                            <td colspan="8" style="text-align:center; padding: var(--spacing-md); color: var(--medium-gray);">
+                                            <td colspan="7" style="text-align:center; padding: var(--spacing-md); color: var(--medium-gray);">
                                                 No equipment added yet
                                             </td>
                                         </tr>
@@ -881,31 +895,16 @@ include '../includes/admin_header.php';
                                             <tr>
                                                 <td>
                                                     <div style="font-weight: bold;"><?php echo htmlspecialchars($item['name']); ?></div>
-                                                    <?php if (!empty($item['description'])): ?>
-                                                        <div style="font-size: 0.8rem; color: var(--medium-gray);">
-                                                            <?php echo htmlspecialchars(substr($item['description'], 0, 60)) . (strlen($item['description']) > 60 ? '…' : ''); ?>
-                                                        </div>
+                                                    <?php if (!empty($item['is_consumable'])): ?>
+                                                        <span class="badge badge-warning" style="font-size: 0.7rem;">Consumable</span>
                                                     <?php endif; ?>
                                                 </td>
+                                                <td><span class="badge badge-secondary"><?php echo htmlspecialchars($item['category']); ?></span></td>
                                                 <td><span class="badge badge-info"><?php echo ucfirst(htmlspecialchars($item['type'] ?: 'other')); ?></span></td>
                                                 <td><?php echo (int)$item['total_quantity']; ?></td>
                                                 <td>
                                                     <span style="color: <?php echo ((int)$item['available_quantity'] > 0) ? '#28a745' : '#dc3545'; ?>; font-weight: bold;">
                                                         <?php echo (int)$item['available_quantity']; ?>
-                                                    </span>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($item['location'] ?? 'N/A'); ?></td>
-                                                <td>
-                                                    <span class="badge badge-<?php 
-                                                        echo match($item['condition_status'] ?? '') {
-                                                            'excellent' => 'success',
-                                                            'good' => 'info',
-                                                            'fair' => 'warning',
-                                                            'poor' => 'danger',
-                                                            default => 'secondary'
-                                                        };
-                                                    ?>">
-                                                        <?php echo ucfirst($item['condition_status'] ?? 'unknown'); ?>
                                                     </span>
                                                 </td>
                                                 <td>

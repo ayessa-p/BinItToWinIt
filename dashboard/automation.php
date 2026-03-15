@@ -24,25 +24,44 @@ if (empty($rooms)) {
     $rooms = ['RM101', 'RM102', 'RM103', 'RM201', 'RM202', 'RM203', 'RM301', 'RM302'];
 }
 
-// Fetch active borrowable equipment from resources (same list as admin Equipment Management)
-$equipment_list = [];
+// Fetch active borrowable equipment from resources, grouped by category
+$equipment_by_category = [];
 try {
-    $stmt = $db->prepare("SELECT id, name FROM resources WHERE category = 'equipment' AND is_active = 1 ORDER BY name ASC");
+    $stmt = $db->prepare("SELECT id, name, category, is_consumable FROM resources WHERE category != 'facility' AND is_active = 1 ORDER BY category, name ASC");
     $stmt->execute();
-    $equipment_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $resources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($resources as $res) {
+        $cat = $res['category'] ?: 'Other';
+        $equipment_by_category[$cat][] = $res;
+    }
 } catch (PDOException $e) {
-    $equipment_list = [];
+    $equipment_by_category = [];
 }
 
 // Ensure common borrowables show up even if DB is missing seeds
 $default_equipment_names = [
-    'Projector','HDMI Cable','VGA Cable','Power Extension Cord',
-    'Audio Speaker','Microphone','Whiteboard','Marker Set','Stapler'
+    'Projector' => 'Tech',
+    'HDMI Cable' => 'Tech',
+    'VGA Cable' => 'Tech',
+    'Power Extension Cord' => 'Tech',
+    'Audio Speaker' => 'Tech',
+    'Microphone' => 'Tech',
+    'Whiteboard' => 'Office Supplies',
+    'Marker Set' => 'Office Supplies',
+    'Stapler' => 'Office Supplies'
 ];
-$existing_names_lc = array_map(fn($r) => strtolower($r['name'] ?? ''), $equipment_list);
-foreach ($default_equipment_names as $name) {
+
+$existing_names_lc = [];
+foreach ($equipment_by_category as $cat => $items) {
+    foreach ($items as $item) {
+        $existing_names_lc[] = strtolower($item['name'] ?? '');
+    }
+}
+
+foreach ($default_equipment_names as $name => $cat) {
     if (!in_array(strtolower($name), $existing_names_lc, true)) {
-        $equipment_list[] = ['id' => 0, 'name' => $name];
+        $is_consumable = (strtolower($name) === 'stapler' || strtolower($name) === 'marker set') ? 1 : 0;
+        $equipment_by_category[$cat][] = ['id' => 0, 'name' => $name, 'category' => $cat, 'is_consumable' => $is_consumable];
     }
 }
 
@@ -386,11 +405,18 @@ include '../includes/header.php';
                         <input type="hidden" name="service_type" value="equipment_borrowing">
                         
                         <div class="form-group">
-                            <label>Equipment Type:</label>
+                            <label>Item Category & Name:</label>
                             <select name="title" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="">Select Equipment...</option>
-                                <?php foreach ($equipment_list as $eq): ?>
-                                    <option value="<?php echo htmlspecialchars($eq['name']); ?>"><?php echo htmlspecialchars($eq['name']); ?></option>
+                                <option value="">Select Item...</option>
+                                <?php foreach ($equipment_by_category as $category => $items): ?>
+                                    <optgroup label="<?php echo htmlspecialchars($category); ?>">
+                                        <?php foreach ($items as $eq): ?>
+                                            <option value="<?php echo htmlspecialchars($eq['name']); ?>">
+                                                <?php echo htmlspecialchars($eq['name']); ?>
+                                                <?php echo !empty($eq['is_consumable']) ? ' (Consumable)' : ''; ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
                                 <?php endforeach; ?>
                             </select>
                         </div>

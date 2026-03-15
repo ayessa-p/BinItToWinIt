@@ -499,7 +499,7 @@ CREATE TABLE `resources` (
   `id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
-  `category` enum('equipment','facility','service','material') NOT NULL,
+  `category` varchar(100) NOT NULL,
   `type` varchar(100) DEFAULT NULL,
   `total_quantity` int(11) DEFAULT 0,
   `available_quantity` int(11) DEFAULT 0,
@@ -510,6 +510,7 @@ CREATE TABLE `resources` (
   `next_maintenance_date` date DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
   `requires_approval` tinyint(1) DEFAULT 0,
+  `is_consumable` tinyint(1) DEFAULT 0,
   `min_user_level` enum('student','officer','admin') DEFAULT 'student',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -519,8 +520,8 @@ CREATE TABLE `resources` (
 -- Dumping data for table `resources`
 --
 
-INSERT INTO `resources` (`id`, `name`, `description`, `category`, `type`, `total_quantity`, `available_quantity`, `location`, `condition_status`, `acquisition_date`, `last_maintenance_date`, `next_maintenance_date`, `is_active`, `requires_approval`, `min_user_level`, `created_at`, `updated_at`) VALUES
-(1, 'Stapler', '', 'equipment', 'borrowable', 4, 4, 'MTICS Office', 'good', NULL, NULL, NULL, 1, 1, 'student', '2026-03-02 14:23:07', '2026-03-04 05:41:30');
+INSERT INTO `resources` (`id`, `name`, `description`, `category`, `type`, `total_quantity`, `available_quantity`, `location`, `condition_status`, `acquisition_date`, `last_maintenance_date`, `next_maintenance_date`, `is_active`, `requires_approval`, `is_consumable`, `min_user_level`, `created_at`, `updated_at`) VALUES
+(1, 'Stapler', '', 'Office Supplies', 'borrowable', 4, 4, 'MTICS Office', 'good', NULL, NULL, NULL, 1, 1, 1, 'student', '2026-03-02 14:23:07', '2026-03-04 05:41:30');
 
 -- --------------------------------------------------------
 

@@ -24,9 +24,9 @@ try {
                 <span class="hero-label" style="font-size: 0.9rem;">Project</span>
                 <h1 class="hero-title" style="font-size: 2.2rem; margin-bottom: 1rem;">Bin It to Win It</h1>
                 <p class="hero-description" style="font-size: 1rem; line-height: 1.6;">
-                    An innovative recycling initiative that combines environmental consciousness with technology. 
-                    Using smart sensors integrated into recycling bins, we track recycling activities and reward 
-                    students with Eco-Tokens for their contributions to sustainability. This project demonstrates 
+                    An innovative recycling initiative that combines environmental consciousness with technology.
+                    Using smart sensors integrated into recycling bins, we track recycling activities and reward
+                    students with Eco-Tokens for their contributions to sustainability. This project demonstrates
                     how IoT technology can create positive behavioral change while promoting environmental responsibility.
                 </p>
                 <div style="margin-top: var(--spacing-md);">
@@ -49,14 +49,14 @@ try {
             <div class="mission-content">
                 <h2>Our Mission</h2>
                 <p>
-                    To empower students with technological knowledge, foster innovation, 
-                    and create a community that values both technical excellence and 
-                    environmental responsibility. We bridge the gap between academic learning 
+                    To empower students with technological knowledge, foster innovation,
+                    and create a community that values both technical excellence and
+                    environmental responsibility. We bridge the gap between academic learning
                     and real-world applications.
                 </p>
                 <p>
-                    Through our innovative programs like "Bin It to Win It," we demonstrate 
-                    how technology can be harnessed to create positive environmental impact 
+                    Through our innovative programs like "Bin It to Win It," we demonstrate
+                    how technology can be harnessed to create positive environmental impact
                     while rewarding students for their contributions to sustainability.
                 </p>
                 <div style="margin-top: var(--spacing-md);">
@@ -76,12 +76,12 @@ try {
             </div>
             <div class="card-body">
                 <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-                    <strong>Bin It to Win It</strong> is our innovative recycling program that 
-                    rewards students for their environmental efforts. Every recycled bottle 
-                    you deposit earns you <strong style="color: var(--gold-yellow);">Eco-Tokens</strong> 
+                    <strong>Bin It to Win It</strong> is our innovative recycling program that
+                    rewards students for their environmental efforts. Every recycled bottle
+                    you deposit earns you <strong style="color: var(--gold-yellow);">Eco-Tokens</strong>
                     that can be redeemed for exciting rewards!
                 </p>
-                
+
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
                     <div style="text-align: center;">
                         <div style="font-size: 3rem; color: var(--gold-yellow); margin-bottom: 0.5rem;"><i class="fa-solid fa-recycle"></i></div>
@@ -99,7 +99,7 @@ try {
                         <p style="color: var(--medium-gray);">Exchange tokens for rewards</p>
                     </div>
                 </div>
-                
+
                 <div style="text-align: center; margin-top: 2rem;">
                     <a href="projects.php#bin-it-to-win-it" class="btn btn-primary">Learn More</a>
                     <?php if (!is_logged_in()): ?>

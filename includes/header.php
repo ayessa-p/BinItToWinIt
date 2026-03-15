@@ -25,7 +25,7 @@
                         </div>
                     </a>
                 </div>
-                
+
                 <nav class="main-nav">
                     <ul class="nav-list">
                         <li><a href="<?php echo SITE_URL; ?>/index.php" class="nav-link">Home</a></li>
@@ -51,7 +51,7 @@
                     $current_name = isset($_SESSION['full_name']) ? $_SESSION['full_name'] : 'Account';
                     $initials = strtoupper(substr($current_name, 0, 1));
                     $avatar_url = null;
-                    
+
                     // Try to get current user data from database to ensure latest profile image
                     try {
                         $db = Database::getInstance()->getConnection();
@@ -64,7 +64,7 @@
                         $avatar_url = $_SESSION['profile_image'] ?? null;
                         error_log("Header - DB error, using session fallback: " . $e->getMessage());
                     }
-                    
+
                     // Debug: Log what we're using
                     error_log("Header - Using profile_image: " . ($avatar_url ?? 'null'));
                     error_log("Header - Session full_name: " . $current_name);
@@ -73,7 +73,7 @@
                         <button class="user-dropdown-toggle" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
                             <div style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: #4f46e5; text-decoration: none; overflow: hidden;">
                                 <?php if ($avatar_url): ?>
-                                    <?php 
+                                    <?php
                                     // Debug: Log the image source
                                     error_log("Header - Displaying image: " . htmlspecialchars($avatar_url));
                                     ?>
@@ -90,14 +90,14 @@
                                 <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; color: var(--medium-gray);"></i>
                             </div>
                         </button>
-                        
+
                         <div class="user-dropdown-menu" style="position: absolute; top: 100%; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); min-width: 180px; z-index: 9999; display: none; pointer-events: auto;">
                             <div style="padding: 0.5rem 0;">
                                 <a href="<?php echo SITE_URL; ?>/dashboard/profile.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--text-dark); text-decoration: none; transition: background 0.2s ease; border-radius: 4px;">
                                     <i class="fa-solid fa-user-edit" style="color: var(--medium-gray);"></i>
                                     <span>Edit Profile</span>
                                 </a>
-                               
+
                                 <div style="border-top: 1px solid #e5e7eb; margin: 0.25rem 0;"></div>
                                 <a href="<?php echo SITE_URL; ?>/auth/logout.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--text-dark); text-decoration: none; transition: background 0.2s ease; border-radius: 4px;">
                                     <i class="fa-solid fa-sign-out-alt" style="color: var(--medium-gray);"></i>
@@ -107,7 +107,7 @@
                         </div>
                     </div>
                 <?php endif; ?>
-                
+
                 <button class="mobile-menu-toggle" aria-label="Toggle menu">
                     <span></span>
                     <span></span>
@@ -122,16 +122,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             const dropdownToggle = document.querySelector('.user-dropdown-toggle');
             const dropdownMenu = document.querySelector('.user-dropdown-menu');
-            
+
             if (dropdownToggle && dropdownMenu) {
                 console.log('Dropdown elements found!');
-                
+
                 // Show dropdown on hover
                 dropdownToggle.addEventListener('mouseenter', function() {
                     console.log('Mouse entered toggle');
                     dropdownMenu.style.display = 'block';
                 });
-                
+
                 // Hide dropdown when leaving the dropdown area
                 dropdownToggle.addEventListener('mouseleave', function(e) {
                     setTimeout(() => {
@@ -140,25 +140,25 @@
                         }
                     }, 100);
                 });
-                
+
                 dropdownMenu.addEventListener('mouseleave', function() {
                     dropdownMenu.style.display = 'none';
                 });
-                
+
                 // Close dropdown when clicking on menu items
                 dropdownMenu.addEventListener('click', function(e) {
                     if (e.target.tagName === 'A') {
                         dropdownMenu.style.display = 'none';
                     }
                 });
-                
+
                 // Add hover effects to menu items
                 const menuItems = dropdownMenu.querySelectorAll('a');
                 menuItems.forEach(item => {
                     item.addEventListener('mouseenter', function() {
                         this.style.background = 'rgba(0, 123, 255, 0.1)';
                     });
-                    
+
                     item.addEventListener('mouseleave', function() {
                         this.style.background = 'transparent';
                     });

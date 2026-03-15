@@ -8,7 +8,7 @@
                     <p>Manila Technician Institute Computer Society</p>
                     <p>Empowering students through technology and innovation.</p>
                 </div>
-                
+
                 <div class="footer-section">
                     <h4>Quick Links</h4>
                     <ul>
@@ -18,7 +18,7 @@
                         <li><a href="<?php echo SITE_URL; ?>/news.php">News & Updates</a></li>
                     </ul>
                 </div>
-                
+
                 <div class="footer-section">
                     <h4>Bin It to Win It</h4>
                     <ul>
@@ -32,14 +32,14 @@
                         <?php endif; ?>
                     </ul>
                 </div>
-                
+
                 <div class="footer-section">
                     <h4>Contact</h4>
                     <p>Email: mticsofficial@gmail.com</p>
                     <p>Phone: +63 123 456 7890</p>
                 </div>
             </div>
-            
+
             <div class="footer-bottom">
                 <p>&copy; <?php echo date('Y'); ?> MTICS. All rights reserved.</p>
             </div>

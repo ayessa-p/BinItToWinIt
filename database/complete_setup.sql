@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS resources (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    category ENUM('equipment', 'facility', 'service', 'material') NOT NULL,
+    category VARCHAR(100) NOT NULL,
     type VARCHAR(100),
     total_quantity INT DEFAULT 0,
     available_quantity INT DEFAULT 0,
@@ -260,6 +260,7 @@ CREATE TABLE IF NOT EXISTS resources (
     next_maintenance_date DATE,
     is_active BOOLEAN DEFAULT TRUE,
     requires_approval BOOLEAN DEFAULT FALSE,
+    is_consumable BOOLEAN DEFAULT FALSE,
     min_user_level ENUM('student', 'officer', 'admin') DEFAULT 'student',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -269,16 +270,16 @@ CREATE TABLE IF NOT EXISTS resources (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Default borrowable equipment
-INSERT INTO resources (name, description, category, type, total_quantity, available_quantity, location, condition_status, is_active, requires_approval, min_user_level) VALUES
-('Projector', 'Standard multimedia projector', 'equipment', 'borrowable', 3, 3, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
-('HDMI Cable', 'High‑speed HDMI cable', 'equipment', 'borrowable', 10, 10, 'MTICS Office', 'excellent', TRUE, FALSE, 'student'),
-('VGA Cable', 'Legacy VGA display cable', 'equipment', 'borrowable', 5, 5, 'MTICS Office', 'good', TRUE, FALSE, 'student'),
-('Power Extension Cord', '4‑socket power extension cord', 'equipment', 'borrowable', 6, 6, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
-('Audio Speaker', 'Portable audio speaker set', 'equipment', 'borrowable', 2, 2, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
-('Microphone', 'Wired microphone for events', 'equipment', 'borrowable', 4, 4, 'MTICS Office', 'good', TRUE, TRUE, 'student'),
-('Whiteboard', 'Portable whiteboard', 'equipment', 'borrowable', 2, 2, 'MTICS Office', 'good', TRUE, FALSE, 'student'),
-('Marker Set', 'Set of whiteboard markers', 'equipment', 'borrowable', 8, 8, 'MTICS Office', 'good', TRUE, FALSE, 'student'),
-('Stapler', 'Standard office stapler', 'equipment', 'borrowable', 4, 4, 'MTICS Office', 'good', TRUE, FALSE, 'student');
+INSERT INTO resources (name, description, category, type, total_quantity, available_quantity, location, condition_status, is_active, requires_approval, min_user_level, is_consumable) VALUES
+('Projector', 'Standard multimedia projector', 'Tech', 'borrowable', 3, 3, 'MTICS Office', 'good', TRUE, TRUE, 'student', FALSE),
+('HDMI Cable', 'High‑speed HDMI cable', 'Tech', 'borrowable', 10, 10, 'MTICS Office', 'excellent', TRUE, FALSE, 'student', FALSE),
+('VGA Cable', 'Legacy VGA display cable', 'Tech', 'borrowable', 5, 5, 'MTICS Office', 'good', TRUE, FALSE, 'student', FALSE),
+('Power Extension Cord', '4‑socket power extension cord', 'Tech', 'borrowable', 6, 6, 'MTICS Office', 'good', TRUE, TRUE, 'student', FALSE),
+('Audio Speaker', 'Portable audio speaker set', 'Tech', 'borrowable', 2, 2, 'MTICS Office', 'good', TRUE, TRUE, 'student', FALSE),
+('Microphone', 'Wired microphone for events', 'Tech', 'borrowable', 4, 4, 'MTICS Office', 'good', TRUE, TRUE, 'student', FALSE),
+('Whiteboard', 'Portable whiteboard', 'Office Supplies', 'borrowable', 2, 2, 'MTICS Office', 'good', TRUE, FALSE, 'student', FALSE),
+('Marker Set', 'Set of whiteboard markers', 'Office Supplies', 'borrowable', 8, 8, 'MTICS Office', 'good', TRUE, FALSE, 'student', TRUE),
+('Stapler', 'Standard office stapler', 'Office Supplies', 'borrowable', 4, 4, 'MTICS Office', 'good', TRUE, FALSE, 'student', TRUE);
 
 -- Default rooms (facility -> room)
 INSERT INTO resources (name, description, category, type, total_quantity, available_quantity, location, condition_status, is_active, requires_approval, min_user_level) VALUES

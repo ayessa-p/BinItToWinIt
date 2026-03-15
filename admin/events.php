@@ -22,7 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $is_published = isset($_POST['is_published']) ? 1 : 0;
         $attendance_enabled = isset($_POST['attendance_enabled']) ? 1 : 0;
 
-        // Check if DB has thumbnail/gallery columns
         $has_thumbnail = false;
         $has_gallery = false;
         try {
@@ -31,16 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cols = $colStmt->fetchAll(PDO::FETCH_COLUMN);
             $has_thumbnail = in_array('thumbnail_url', $cols);
             $has_gallery = in_array('gallery_json', $cols);
-        } catch (Exception $e) {
-            // ignore
-        }
+        } catch (Exception $e) {}
 
-        // Handle image uploads
         $image_url = '';
         $thumbnail_url = '';
         $gallery_array = [];
 
-        // If updating, get existing image(s)
         if ($id > 0) {
             $stmt = $db->prepare("SELECT image_url" . ($has_thumbnail ? ", thumbnail_url" : "") . ($has_gallery ? ", gallery_json" : "") . " FROM events WHERE id = ?");
             $stmt->execute([$id]);
@@ -55,19 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // If admin requested deletions (from edit form), remove selected files and entries
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id > 0) {
-            // delete thumbnail
+        if ($id > 0) {
             if (!empty($_POST['delete_thumbnail']) && !empty($thumbnail_url)) {
                 $file_path = __DIR__ . '/../' . $thumbnail_url;
                 if (file_exists($file_path)) @unlink($file_path);
                 $thumbnail_url = '';
             }
-
-            // delete selected gallery images
             if (!empty($_POST['delete_gallery']) && is_array($_POST['delete_gallery']) && count($gallery_array) > 0) {
-                $to_delete = $_POST['delete_gallery'];
-                foreach ($to_delete as $del) {
+                foreach ($_POST['delete_gallery'] as $del) {
                     $file_path = __DIR__ . '/../' . $del;
                     if (file_exists($file_path)) @unlink($file_path);
                     $idx = array_search($del, $gallery_array);
@@ -78,20 +68,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $upload_dir = '../uploads/events/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
-        }
+        if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
-        // thumbnail upload
         if ($has_thumbnail && isset($_FILES['thumbnail_image']) && $_FILES['thumbnail_image']['error'] == UPLOAD_ERR_OK) {
             $file_name = time() . '_thumb_' . basename($_FILES['thumbnail_image']['name']);
-            $target_file = $upload_dir . $file_name;
-            if (move_uploaded_file($_FILES['thumbnail_image']['tmp_name'], $target_file)) {
+            if (move_uploaded_file($_FILES['thumbnail_image']['tmp_name'], $upload_dir . $file_name)) {
                 $thumbnail_url = 'uploads/events/' . $file_name;
             }
         }
 
-        // gallery uploads (multiple)
         if ($has_gallery && isset($_FILES['gallery_images'])) {
             $files = $_FILES['gallery_images'];
             for ($i = 0; $i < count($files['name']); $i++) {
@@ -99,8 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $unique_id = microtime(true) * 10000;
                     $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
                     $file_name = 'gallery_' . $unique_id . '_' . $i . '.' . $ext;
-                    $target_file = $upload_dir . $file_name;
-                    if (move_uploaded_file($files['tmp_name'][$i], $target_file)) {
+                    if (move_uploaded_file($files['tmp_name'][$i], $upload_dir . $file_name)) {
                         $gallery_array[] = 'uploads/events/' . $file_name;
                     }
                 }
@@ -115,34 +99,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($has_thumbnail && $has_gallery) {
                     $gallery_json = json_encode($gallery_array);
                     if ($id > 0) {
-                        $stmt = $db->prepare("
-                            UPDATE events SET title = ?, description = ?, event_date = ?,
-                            location = ?, image_url = ?, thumbnail_url = ?, gallery_json = ?, is_published = ?, attendance_enabled = ? WHERE id = ?
-                        ");
+                        $stmt = $db->prepare("UPDATE events SET title=?, description=?, event_date=?, location=?, image_url=?, thumbnail_url=?, gallery_json=?, is_published=?, attendance_enabled=? WHERE id=?");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $attendance_enabled, $id]);
                         $message = 'Event updated successfully!';
                     } else {
-                        $stmt = $db->prepare("
-                            INSERT INTO events (title, description, event_date, location, image_url, thumbnail_url, gallery_json, is_published, attendance_enabled, attendance_closed)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-                        ");
+                        $stmt = $db->prepare("INSERT INTO events (title, description, event_date, location, image_url, thumbnail_url, gallery_json, is_published, attendance_enabled, attendance_closed) VALUES (?,?,?,?,?,?,?,?,?,0)");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $thumbnail_url, $gallery_json, $is_published, $attendance_enabled]);
                         $message = 'Event created successfully!';
                     }
                 } else {
-                    // fallback for older schema
                     if ($id > 0) {
-                        $stmt = $db->prepare("
-                            UPDATE events SET title = ?, description = ?, event_date = ?,
-                            location = ?, image_url = ?, is_published = ?, attendance_enabled = ? WHERE id = ?
-                        ");
+                        $stmt = $db->prepare("UPDATE events SET title=?, description=?, event_date=?, location=?, image_url=?, is_published=?, attendance_enabled=? WHERE id=?");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $attendance_enabled, $id]);
                         $message = 'Event updated successfully!';
                     } else {
-                        $stmt = $db->prepare("
-                            INSERT INTO events (title, description, event_date, location, image_url, is_published, attendance_enabled, attendance_closed)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-                        ");
+                        $stmt = $db->prepare("INSERT INTO events (title, description, event_date, location, image_url, is_published, attendance_enabled, attendance_closed) VALUES (?,?,?,?,?,?,?,0)");
                         $stmt->execute([$title, $description, $event_date, $location, $image_url, $is_published, $attendance_enabled]);
                         $message = 'Event created successfully!';
                     }
@@ -191,21 +162,17 @@ if (isset($_GET['toggle_attendance_closed'])) {
 
 // Handle manage attendance redirect
 if (isset($_GET['manage_attendance'])) {
-    $event_id = (int)$_GET['manage_attendance'];
-    header('Location: manage_attendance.php?event_id=' . $event_id);
+    header('Location: manage_attendance.php?event_id=' . (int)$_GET['manage_attendance']);
     exit;
 }
 
-// Get event to edit
 $edit_event = null;
 if (isset($_GET['edit'])) {
-    $id = (int)$_GET['edit'];
     $stmt = $db->prepare("SELECT * FROM events WHERE id = ?");
-    $stmt->execute([$id]);
+    $stmt->execute([(int)$_GET['edit']]);
     $edit_event = $stmt->fetch();
 }
 
-// Get all events
 $stmt = $db->query("SELECT * FROM events ORDER BY event_date DESC");
 $all_events = $stmt->fetchAll();
 
@@ -270,17 +237,13 @@ include '../includes/admin_header.php';
                             </label>
                         </div>
                     <?php endif; ?>
-                    <small style="color: var(--medium-gray); display: block; margin-top: 0.5rem;">
-                        Upload a small thumbnail (recommended 4:3)
-                    </small>
+                    <small style="color:var(--medium-gray); display:block; margin-top:0.5rem;">Upload a small thumbnail (recommended 4:3)</small>
                 </div>
 
                 <div class="admin-form-group">
                     <label class="admin-form-label">Gallery Images</label>
                     <input type="file" name="gallery_images[]" class="admin-form-input" accept="image/*" multiple>
-                    <small style="color: var(--medium-gray); display: block; margin-top: 0.5rem;">
-                        Upload multiple images for the gallery (optional) — aspect ratio 4:3 recommended
-                    </small>
+                    <small style="color:var(--medium-gray); display:block; margin-top:0.5rem;">Upload multiple images (optional) — 4:3 recommended</small>
                     <?php if ($edit_event && !empty($edit_event['gallery_json'])): ?>
                         <?php $existing_gallery = json_decode($edit_event['gallery_json'], true) ?: []; ?>
                         <?php if (!empty($existing_gallery)): ?>
@@ -299,22 +262,18 @@ include '../includes/admin_header.php';
                 </div>
 
                 <div class="admin-form-group">
-                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" name="is_published"
-                               <?php echo ($edit_event && $edit_event['is_published']) ? 'checked' : ''; ?>>
+                    <label style="display:flex; align-items:center; gap:0.5rem;">
+                        <input type="checkbox" name="is_published" <?php echo ($edit_event && $edit_event['is_published']) ? 'checked' : ''; ?>>
                         <span>Publish Event</span>
                     </label>
                 </div>
 
                 <div class="admin-form-group">
-                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" name="attendance_enabled"
-                               <?php echo ($edit_event && $edit_event['attendance_enabled']) ? 'checked' : ''; ?>>
+                    <label style="display:flex; align-items:center; gap:0.5rem;">
+                        <input type="checkbox" name="attendance_enabled" <?php echo ($edit_event && $edit_event['attendance_enabled']) ? 'checked' : ''; ?>>
                         <span>Enable Attendance Tracking</span>
                     </label>
-                    <small style="color: var(--medium-gray); display: block; margin-top: 0.5rem;">
-                        Allow users to submit attendance with proof photos and earn tokens
-                    </small>
+                    <small style="color:var(--medium-gray); display:block; margin-top:0.5rem;">Allow users to submit attendance with proof photos and earn tokens</small>
                 </div>
 
                 <button type="submit" class="admin-btn admin-btn-primary">
@@ -344,7 +303,7 @@ include '../includes/admin_header.php';
                     <tbody>
                         <?php if (empty($all_events)): ?>
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: var(--spacing-lg); color: var(--medium-gray);">
+                                <td colspan="7" style="text-align:center; padding:var(--spacing-lg); color:var(--medium-gray);">
                                     No events found. Create your first event above.
                                 </td>
                             </tr>
@@ -354,21 +313,19 @@ include '../includes/admin_header.php';
                                 <td>
                                     <?php
                                         $thumb = '';
-                                        if (!empty($event['thumbnail_url'])) {
-                                            $thumb = $event['thumbnail_url'];
-                                        } elseif (!empty($event['image_url'])) {
-                                            $thumb = $event['image_url'];
-                                        } elseif (!empty($event['gallery_json'])) {
+                                        if (!empty($event['thumbnail_url']))      $thumb = $event['thumbnail_url'];
+                                        elseif (!empty($event['image_url']))      $thumb = $event['image_url'];
+                                        elseif (!empty($event['gallery_json'])) {
                                             $g = json_decode($event['gallery_json'], true);
                                             if (is_array($g) && count($g) > 0) $thumb = $g[0];
                                         }
                                     ?>
                                     <?php if (!empty($thumb)): ?>
                                         <img src="<?php echo SITE_URL . '/' . htmlspecialchars($thumb); ?>"
-                                            alt="<?php echo htmlspecialchars($event['title']); ?>"
-                                            style="width: 48px; height: 36px; object-fit: cover; border-radius: var(--radius-sm);">
+                                             alt="<?php echo htmlspecialchars($event['title']); ?>"
+                                             style="width:48px; height:36px; object-fit:cover; border-radius:var(--radius-sm);">
                                     <?php else: ?>
-                                        <span style="color: var(--medium-gray); font-size: 0.9rem;">No image</span>
+                                        <span style="color:var(--medium-gray); font-size:0.9rem;">No image</span>
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($event['title']); ?></td>
@@ -376,24 +333,15 @@ include '../includes/admin_header.php';
                                 <td><?php echo htmlspecialchars($event['location'] ?: 'N/A'); ?></td>
                                 <td>
                                     <?php
-                                        $stmt_att = $db->prepare("
-                                            SELECT
-                                                COUNT(*) as total,
-                                                COUNT(CASE WHEN attendance_status = 'approved' THEN 1 END) as approved,
-                                                COUNT(CASE WHEN attendance_status = 'pending' THEN 1 END) as pending
-                                            FROM event_attendance
-                                            WHERE event_id = ?
-                                        ");
+                                        $stmt_att = $db->prepare("SELECT COUNT(*) as total, COUNT(CASE WHEN attendance_status='approved' THEN 1 END) as approved, COUNT(CASE WHEN attendance_status='pending' THEN 1 END) as pending FROM event_attendance WHERE event_id=?");
                                         $stmt_att->execute([$event['id']]);
-                                        $att_stats = $stmt_att->fetch();
-                                        echo "<span style='color: var(--primary-blue); font-weight: bold;'>" . $att_stats['approved'] . "</span>";
-                                        if ($att_stats['pending'] > 0) {
-                                            echo " <small style='color: orange;'>(" . $att_stats['pending'] . " pending)</small>";
-                                        }
+                                        $att = $stmt_att->fetch();
+                                        echo "<span style='color:var(--primary-blue);font-weight:bold;'>" . $att['approved'] . "</span>";
+                                        if ($att['pending'] > 0) echo " <small style='color:orange;'>(" . $att['pending'] . " pending)</small>";
                                     ?>
                                 </td>
                                 <td>
-                                    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <div style="display:flex; flex-direction:column; gap:0.25rem;">
                                         <span class="badge <?php echo $event['is_published'] ? 'badge-success' : 'badge-warning'; ?>">
                                             <?php echo $event['is_published'] ? 'Published' : 'Draft'; ?>
                                         </span>
@@ -401,32 +349,43 @@ include '../includes/admin_header.php';
                                             <span class="badge badge-info">Attendance ON</span>
                                         <?php endif; ?>
                                         <?php if (!empty($event['attendance_closed'])): ?>
-                                            <span class="badge" style="background: #dc3545; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                                            <span class="badge" style="background:#dc3545;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem;">
                                                 🔒 Attendance Closed
                                             </span>
                                         <?php endif; ?>
                                     </div>
                                 </td>
                                 <td>
-                                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                        <a href="?edit=<?php echo $event['id']; ?>" class="admin-btn admin-btn-secondary admin-btn-sm" style="width: 100%; text-align: center;">Edit</a>
+                                    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                                        <a href="?edit=<?php echo $event['id']; ?>" class="admin-btn admin-btn-secondary admin-btn-sm" style="width:100%;text-align:center;">Edit</a>
                                         <a href="?delete=<?php echo $event['id']; ?>"
                                            class="admin-btn admin-btn-danger admin-btn-sm"
-                                           style="width: 100%; text-align: center;"
+                                           style="width:100%;text-align:center;"
                                            onclick="return confirm('Are you sure you want to delete this event?');">Delete</a>
+
                                         <?php if ($event['attendance_enabled']): ?>
-                                            <a href="?manage_attendance=<?php echo $event['id']; ?>" class="admin-btn admin-btn-primary admin-btn-sm" style="width: 100%; text-align: center;">Manage Attendance</a>
+
+                                            <!-- ── Live Check-in button ── -->
+                                            <a href="event_checkin.php?event_id=<?php echo $event['id']; ?>"
+                                               class="admin-btn admin-btn-sm"
+                                               style="width:100%;text-align:center;background:#7c3aed;color:#fff;border-color:#7c3aed;"
+                                               target="_blank">
+                                                🔍 Live Check-in
+                                            </a>
+
+                                            <a href="?manage_attendance=<?php echo $event['id']; ?>" class="admin-btn admin-btn-primary admin-btn-sm" style="width:100%;text-align:center;">Manage Attendance</a>
+
                                             <?php if (empty($event['attendance_closed'])): ?>
                                                 <a href="?toggle_attendance_closed=<?php echo $event['id']; ?>"
                                                    class="admin-btn admin-btn-warning admin-btn-sm"
-                                                   style="width: 100%; text-align: center; background: #f59e0b; color: #fff; border-color: #f59e0b;"
+                                                   style="width:100%;text-align:center;background:#f59e0b;color:#fff;border-color:#f59e0b;"
                                                    onclick="return confirm('Close attendance? Users will no longer be able to submit.');">
                                                     🔒 Close Attendance
                                                 </a>
                                             <?php else: ?>
                                                 <a href="?toggle_attendance_closed=<?php echo $event['id']; ?>"
                                                    class="admin-btn admin-btn-success admin-btn-sm"
-                                                   style="width: 100%; text-align: center;"
+                                                   style="width:100%;text-align:center;"
                                                    onclick="return confirm('Reopen attendance? Users will be able to submit again.');">
                                                     🔓 Reopen Attendance
                                                 </a>
